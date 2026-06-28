@@ -27,17 +27,15 @@ try:
     dhan_context = DhanContext(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
     dhan = dhanhq(dhan_context)
 except Exception as init_err:
-    st.error(f"🔴 Dhan API Connection Crash: 500 | Context Initialization Failed: {init_err}")
+    st.error(f"🔴 System Configuration Error | Initialization Failed: {init_err}")
     st.stop()
 
 # ----------------------------------------------------
-# 3. Streamlined Data Fetching Architecture
+# 3. Data Fetching Architecture (Pure API)
 # ----------------------------------------------------
-@st.cache_data(ttl=3)  
+@st.cache_data(ttl=1)  
 def fetch_market_snapshot():
     master_data = {"NSE_INDEX": {}, "NSE_FNO": {}}
-    
-    # Combined API parameters mapping definition
     index_payload = {"NSE_INDEX": [13]}
     fno_payload = {"NSE_FNO": [40001, 35002]}
     
@@ -45,23 +43,25 @@ def fetch_market_snapshot():
     try:
         idx_resp = dhan.ohlc_data(securities=index_payload)
         if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
-            st.success("🟢 Dhan Index API is successful: 200 OK")
+            st.success("🟢 Dhan Index API successful: 200 OK")
             master_data["NSE_INDEX"] = idx_resp.get("data", {}).get("NSE_INDEX", {})
         else:
-            st.error("🔴 Dhan Index API Status: 400 | Data feed locked. Please open your Dhan mobile app to initialize access.")
+            remark = idx_resp.get("remarks") if isinstance(idx_resp, dict) else "Market Closed / Feed Locked"
+            st.error(f"🔴 Dhan Index API Status: 400 | {remark}")
     except Exception as e:
-        st.error(f"🔴 Dhan Index API Failed: 500 Internal Error | {e}")
+        st.error(f"🔴 Dhan Index API Crash: 500 | {e}")
         
     # Fetch Futures and Options Data
     try:
         fno_resp = dhan.quote_data(securities=fno_payload)
         if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
-            st.success("🟢 Dhan FNO API is successful: 200 OK")
+            st.success("🟢 Dhan FNO API successful: 200 OK")
             master_data["NSE_FNO"] = fno_resp.get("data", {}).get("NSE_FNO", {})
         else:
-            st.error("🔴 Dhan FNO API Status: 400 | Data stream rejected.")
+            remark = fno_resp.get("remarks") if isinstance(fno_resp, dict) else "Market Closed / Offline"
+            st.error(f"🔴 Dhan FNO API Status: 400 | {remark}")
     except Exception as e:
-        st.error(f"🔴 Dhan FNO API Failed: 500 Internal Error | {e}")
+        st.error(f"🔴 Dhan FNO API Crash: 500 | {e}")
         
     return master_data
 
@@ -69,42 +69,44 @@ def fetch_orders():
     try:
         response = dhan.get_order_list()
         if isinstance(response, dict) and response.get("status") == "success":
-            st.success("🟢 Dhan Orders API is successful: 200 OK")
+            st.success("🟢 Dhan Orders API successful: 200 OK")
             orders = response.get("data", []) if response.get("data") else []
             df = pd.DataFrame(orders)
             columns_to_keep = ['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus']
             available_cols = [col for col in columns_to_keep if col in df.columns]
             return df[available_cols]
         else:
-            st.error("🔴 Dhan Orders API Failed: 401 Unauthorized Credentials")
+            remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized"
+            st.error(f"🔴 Dhan Orders API Failed: 401 | {remark}")
     except Exception as e:
-        st.error(f"🔴 Dhan Orders API Failed: 500 Connection Timeout | {e}")
+        st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'quantity', 'price', 'orderStatus'])
 
-# Render connection logs container
+# Execute Engine Queries
 st.markdown("### 📡 API Connection Logs")
 data = fetch_market_snapshot()
 orders_df = fetch_orders()
 
 # ----------------------------------------------------
-# 4. Safe Dictionary Value Extraction & Fallbacks
+# 4. Real-Time Variable Extraction (No fallbacks)
 # ----------------------------------------------------
 nifty_spot = data.get("NSE_INDEX", {}).get("13", {}).get("last_price", 0.0)
 nifty_fut = data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 0.0)
 vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 0.0)
 
-# If market is closed or API values return zero, load layout defaults seamlessly
-if nifty_spot == 0.0:
-    nifty_spot = 25120.00
-    nifty_fut = 25135.00
-    vix = 13.20
+# Calculate levels dynamically if data exists, else default to clean zero bounds
+if nifty_spot > 0:
+    support = int((nifty_spot // 100) * 100)
+    resistance = support + 200
+    expiry_range = f"{support} - {resistance}"
+else:
+    support, resistance = 0, 0
+    expiry_range = "0 - 0"
 
-pcr = 0.91
-advances, declines = 34, 16
-support = int((nifty_spot // 100) * 100)
-resistance = support + 200
-expiry_range = f"{support} - {resistance}"
-breadth = "BULLISH" if advances > declines else "BEARISH"
+# Set structural tracking values 
+pcr = 0.00
+advances, declines = 0, 0
+breadth = "NEUTRAL"
 
 # ----------------------------------------------------
 # 5. UI Custom CSS & Terminal Render Engineering
@@ -139,7 +141,7 @@ st.markdown(
 )
 
 st.markdown("---")
-st.markdown("### 📊 Market Snapshot")
+st.markdown("### 📊 Live Terminal Snapshot")
 
 ist_zone = ZoneInfo("Asia/Kolkata")
 current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
@@ -203,7 +205,7 @@ terminal_html = f"""
 st.markdown(terminal_html, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 6. Orders Rendering Block
+# 6. Orders Ledger Layout Window
 # ----------------------------------------------------
 st.markdown("### 📦 Today's Orders")
 if not orders_df.empty:
