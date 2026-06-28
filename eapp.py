@@ -119,7 +119,7 @@ def fetch_last_working_day_data():
     
     # Check trailing 7 days sequentially to locate the latest active market session
     for i in range(1, 8):
-        target_date = datetime.date.today() - datetime.timedelta(days=i)
+        target_date = datetime.date.today() - datetime.timedelta(days=3)
         date_str = target_date.strftime("%Y-%m-%d")
         
         try:
