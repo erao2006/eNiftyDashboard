@@ -11,7 +11,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-st.set_page_config(page_title="Dhan Monitor", layout="centered")
+st.set_page_config(page_title="Dhan Monitor & Portfolio", layout="centered")
 
 # ----------------------------------------------------
 # 2. Authentication Setup via Secrets
@@ -31,7 +31,7 @@ except Exception as init_err:
     st.stop()
 
 # ----------------------------------------------------
-# 3. Data Fetching Architecture (Pure API)
+# 3. Pure API Trading Data Fetching Engine (Zero-Simulation)
 # ----------------------------------------------------
 @st.cache_data(ttl=1)  
 def fetch_market_snapshot():
@@ -80,21 +80,41 @@ def fetch_orders():
             st.error(f"🔴 Dhan Orders API Failed: 401 | {remark}")
     except Exception as e:
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
-    return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'quantity', 'price', 'orderStatus'])
+    return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
-# Execute Engine Queries
+def fetch_positions():
+    try:
+        response = dhan.get_positions()
+        if isinstance(response, dict) and response.get("status") == "success":
+            st.success("🟢 Dhan Positions API successful: 200 OK")
+            positions = response.get("data", []) if response.get("data") else []
+            df = pd.DataFrame(positions)
+            columns_to_keep = [
+                'tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 
+                'realizedProfit', 'unrealizedProfit'
+            ]
+            available_cols = [col for col in columns_to_keep if col in df.columns]
+            return df[available_cols]
+        else:
+            remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized"
+            st.error(f"🔴 Dhan Positions API Failed: 401 | {remark}")
+    except Exception as e:
+        st.error(f"🔴 Dhan Positions API Failed: 500 Connection Error | {e}")
+    return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
+
+# Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
-data = fetch_market_snapshot()
+market_data = fetch_market_snapshot()
 orders_df = fetch_orders()
+positions_df = fetch_positions()
 
 # ----------------------------------------------------
-# 4. Real-Time Variable Extraction (No fallbacks)
+# 4. Pure Real-Time Market Metric Extraction (Zeros Fallback)
 # ----------------------------------------------------
-nifty_spot = data.get("NSE_INDEX", {}).get("13", {}).get("last_price", 0.0)
-nifty_fut = data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 0.0)
-vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 0.0)
+nifty_spot = market_data.get("NSE_INDEX", {}).get("13", {}).get("last_price", 0.0)
+nifty_fut = market_data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 0.0)
+vix = market_data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 0.0)
 
-# Calculate levels dynamically if data exists, else default to clean zero bounds
 if nifty_spot > 0:
     support = int((nifty_spot // 100) * 100)
     resistance = support + 200
@@ -103,13 +123,12 @@ else:
     support, resistance = 0, 0
     expiry_range = "0 - 0"
 
-# Set structural tracking values 
 pcr = 0.00
 advances, declines = 0, 0
 breadth = "NEUTRAL"
 
 # ----------------------------------------------------
-# 5. UI Custom CSS & Terminal Render Engineering
+# 5. UI Custom CSS & Theme Injection
 # ----------------------------------------------------
 st.markdown(
     """
@@ -135,17 +154,27 @@ st.markdown(
     .label { font-weight: bold; color: #888888; }
     .value { font-weight: bold; color: #00FF66; }
     .value-neutral { font-weight: bold; color: #F1C40F; }
+    .pnl-box {
+        padding: 16px;
+        border-radius: 12px;
+        font-family: monospace;
+        font-weight: bold;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    }
     </style>
     """, 
     unsafe_allow_html=True
 )
 
 st.markdown("---")
+
+# ----------------------------------------------------
+# 6. Live Market Terminal Block
+# ----------------------------------------------------
 st.markdown("### 📊 Live Terminal Snapshot")
-
-ist_zone = ZoneInfo("Asia/Kolkata")
-current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
-
 terminal_html = f"""
 <div class="terminal-box">
     <div class="terminal-row">
@@ -201,16 +230,40 @@ terminal_html = f"""
     </div>
 </div>
 """
-
 st.markdown(terminal_html, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 6. Orders Ledger Layout Window
+# 7. Portfolio P&L Summary Banner
 # ----------------------------------------------------
-st.markdown("### 📦 Today's Orders")
+st.markdown("### 📈 Cumulative Performance P&L")
+if not positions_df.empty:
+    realized = pd.to_numeric(positions_df['realizedProfit'], errors='coerce').fillna(0.0).sum()
+    unrealized = pd.to_numeric(positions_df['unrealizedProfit'], errors='coerce').fillna(0.0).sum()
+    total_pnl = realized + unrealized
+    
+    if total_pnl >= 0:
+        st.markdown(f'<div class="pnl-box" style="background-color: #0A2F1D; color: #00FF66; border: 1px solid #00FF66;">TOTAL P&L: ₹{total_pnl:,.2f}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="pnl-box" style="background-color: #3A1414; color: #FF4D4D; border: 1px solid #FF4D4D;">TOTAL P&L: ₹{total_pnl:,.2f}</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="pnl-box" style="background-color: #1E1E1E; color: #E0E0E0; border: 1px solid #333333;">TOTAL P&L: ₹0.00</div>', unsafe_allow_html=True)
+
+# ----------------------------------------------------
+# 8. Positions & Orders Ledger Displays
+# ----------------------------------------------------
+st.markdown("### 💼 Open Positions Details")
+if not positions_df.empty:
+    st.dataframe(positions_df, use_container_width=True, hide_index=True)
+else:
+    st.info("No active open positions found.")
+
+st.markdown("### 📦 Today's Order Book")
 if not orders_df.empty:
     st.dataframe(orders_df, use_container_width=True, hide_index=True)
 else:
-    st.info("No active orders found for today.")
+    st.info("No orders processed today.")
 
-st.markdown(f"<div style='padding-left: 5px; color: #666666; font-size: 0.85em; font-family: monospace;'>Updated :<br>{current_time}</div>", unsafe_allow_html=True)
+# Sync Footer
+ist_zone = ZoneInfo("Asia/Kolkata")
+current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
+st.markdown(f"<div style='padding-left: 2px; color: #666666; font-size: 0.85em; font-family: monospace; margin-top: 25px;'>Last Sync: {current_time}</div>", unsafe_allow_html=True)
