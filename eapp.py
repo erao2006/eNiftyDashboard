@@ -212,36 +212,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("Final Screen Layout")
-
-ist_zone = ZoneInfo("Asia/Kolkata")
-current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
-
-# HTML Market Snapshot Block
-terminal_html = f"""
-<div class="terminal-box">
-    <div class="terminal-row"><span class="label">NIFTY</span><span class="value">{nifty_spot:,.2f}</span></div>
-    <div class="terminal-row"><span class="label">FUTURE</span><span class="value">{nifty_fut:,.2f}</span></div>
-</div>
-<div class="terminal-box">
-    <div class="terminal-row"><span class="label">ADV / DEC</span><span class="value-neutral">{advances} / {declines}</span></div>
-</div>
-<div class="terminal-box">
-    <div class="terminal-row"><span class="label">PCR</span><span class="value-neutral">{pcr:.2f}</span></div>
-    <div class="terminal-row"><span class="label">VIX</span><span class="value-neutral">{vix:.1f}</span></div>
-</div>
-<div class="terminal-box">
-    <div class="terminal-row"><span class="label">SUPPORT</span><span class="value">{support}</span></div>
-    <div class="terminal-row"><span class="label">RESISTANCE</span><span class="value">{resistance}</span></div>
-</div>
-<div class="terminal-box">
-    <div class="terminal-row"><span class="label">EXPIRY RANGE</span><span class="value-neutral">{expiry_range}</span></div>
-</div>
-<div class="terminal-box">
-    <div class="terminal-row"><span class="label">BREADTH</span><span class="value">: {breadth}</span></div>
-</div>
-"""
-st.markdown(terminal_html, unsafe_allow_html=True)
 
 # --- New Section: Orders Table ---
 st.markdown("### 📦 Today's Orders")
