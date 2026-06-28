@@ -101,13 +101,13 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # ----------------------------------------------------
-# Dynamic Logic: Fetch Last Actual Market Working Day (Zero-Fallback)
+# 4. Corrected Dynamic Historic Query Sequence (Inclusive Windowing)
 # ----------------------------------------------------
 @st.cache_data(ttl=1800)
 def fetch_last_working_day_data():
     """
-    Looks backward dynamically to discover the most recent active trading day context,
-    defaulting cleanly to 0 values if the endpoint is blocked or unreachable.
+    Looks backward sequentially expanding target lookup window brackets by +1 day 
+    to successfully fulfill the non-inclusive parameters of the Dhan Historical Engine.
     """
     fixed_historical_snapshot = {
         "working_date": "Unknown", 
@@ -117,40 +117,42 @@ def fetch_last_working_day_data():
         "status": "No Historical Connection"
     }
     
-    # Check trailing 7 days sequentially to locate the latest active market session
+    # Sweep backward to capture the most recent market close data block
     for i in range(1, 8):
-        target_date = datetime.date.today() - datetime.timedelta(days=3)
-        date_str = target_date.strftime("%Y-%m-%d")
+        target_date = datetime.date.today() - datetime.timedelta(days=i)
+        next_day = target_date + datetime.timedelta(days=1)
+        
+        date_from_str = target_date.strftime("%Y-%m-%d")
+        date_to_str = next_day.strftime("%Y-%m-%d")
         
         try:
             hist_response = dhan.historical_daily_data(
                 security_id="13",
                 exchange_segment="IDX_I",
                 instrument_type="INDEX",
-                from_date=date_str,
-                to_date=date_str
+                from_date=date_from_str,
+                to_date=date_to_str
             )
             if isinstance(hist_response, dict) and hist_response.get("status") == "success":
                 records = hist_response.get("data", [])
                 if records:
-                    # Found active day data context
                     fixed_historical_snapshot["working_date"] = target_date.strftime("%d-%b-%Y")
                     fixed_historical_snapshot["close_price"] = float(records[0].get("close", 0.0))
-                    fixed_historical_snapshot["adv"] = 0  # Default zero as requested if not provided by endpoint
+                    fixed_historical_snapshot["adv"] = 0  
                     fixed_historical_snapshot["dec"] = 0  
-                    fixed_historical_snapshot["status"] = "Success (API Live)"
+                    fixed_historical_snapshot["status"] = f"Success (Fetched via range: {date_from_str})"
                     return fixed_historical_snapshot
         except Exception:
             pass
 
-    # If loop concludes without breaking out due to network blocks/closed state, apply clean structural zeros
+    # Safe zero implementation fallback execution point
     if fixed_historical_snapshot["close_price"] == 0.0:
         fallback_date = datetime.date.today() - datetime.timedelta(days=1)
         fixed_historical_snapshot["working_date"] = fallback_date.strftime("%d-%b-%Y")
         fixed_historical_snapshot["close_price"] = 0.00
         fixed_historical_snapshot["adv"] = 0
         fixed_historical_snapshot["dec"] = 0
-        fixed_historical_snapshot["status"] = "Fallback Active (Zeros Applied)"
+        fixed_historical_snapshot["status"] = "API Query Null | Safe Zero Fallback Activated"
         
     return fixed_historical_snapshot
 
@@ -162,7 +164,7 @@ positions_df = fetch_positions()
 working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
-# 4. Pure Real-Time Market Metric Extraction (Zeros Fallback)
+# 5. Pure Real-Time Market Metric Extraction (Zeros Fallback)
 # ----------------------------------------------------
 nifty_spot = market_data.get("NSE_INDEX", {}).get("13", {}).get("last_price", 0.0)
 nifty_fut = market_data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 0.0)
@@ -181,7 +183,7 @@ advances, declines = 0, 0
 breadth = "NEUTRAL"
 
 # ----------------------------------------------------
-# 5. UI Custom CSS & Theme Injection
+# 6. UI Custom CSS & Theme Injection
 # ----------------------------------------------------
 st.markdown(
     """
@@ -225,7 +227,7 @@ st.markdown(
 st.markdown("---")
 
 # ----------------------------------------------------
-# 6. Live Market Terminal Block
+# 7. Live Market Terminal Block
 # ----------------------------------------------------
 st.markdown("### 📊 Live Terminal Snapshot")
 terminal_html = f"""
@@ -286,7 +288,7 @@ terminal_html = f"""
 st.markdown(terminal_html, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 7. Portfolio P&L Summary Banner
+# 8. Portfolio P&L Summary Banner
 # ----------------------------------------------------
 st.markdown("### 📈 Cumulative Performance P&L")
 if not positions_df.empty:
@@ -302,7 +304,7 @@ else:
     st.markdown('<div class="pnl-box" style="background-color: #1E1E1E; color: #E0E0E0; border: 1px solid #333333;">TOTAL P&L: ₹0.00</div>', unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 8. Positions & Orders Ledger Displays
+# 9. Positions & Orders Ledger Displays
 # ----------------------------------------------------
 st.markdown("### 💼 Open Positions Details")
 if not positions_df.empty:
@@ -317,7 +319,7 @@ else:
     st.info("No orders processed today.")
 
 # ----------------------------------------------------
-# 9. Isolated Past Market Settlement Block (Dynamic Last Working Day)
+# 10. Isolated Past Market Settlement Block
 # ----------------------------------------------------
 st.markdown("### 🏛️ Past Fixed Settlement Snapshot")
 fixed_thursday_html = f"""
