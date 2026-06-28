@@ -44,9 +44,9 @@ def fetch_market_snapshot():
 data = fetch_market_snapshot()
 
 # Extract API values
-nifty_spot = data.get("NSE_EQ", {}).get("13", {}).get("last_price", 25120.00)
-nifty_fut = data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 25135.00)
-vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 13.20)
+nifty_spot = data.get("NSE_EQ", {}).get("13", {}).get("last_price", 5120.00)
+nifty_fut = data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 5135.00)
+vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 3.20)
 
 # Derivative metrics placeholders
 pcr = 0.00
