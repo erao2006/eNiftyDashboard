@@ -2,6 +2,10 @@ import datetime
 import streamlit as st
 from dhanhq import dhanhq
 
+import datetime
+import streamlit as st
+from dhanhq import dhanhq, DhanContext  # Added DhanContext here
+
 # ----------------------------------------------------
 # 1. API Configuration (Using Secrets for Security)
 # ----------------------------------------------------
@@ -13,7 +17,10 @@ except Exception:
     CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
     ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
 
-dhan = dhanhq(CLIENT_ID, ACCESS_TOKEN)
+# Fix: Wrap the credentials inside DhanContext first
+dhan_context = DhanContext(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
+dhan = dhanhq(dhan_context)
+
 
 # Instrument Security IDs
 SECURITIES = {
