@@ -91,13 +91,13 @@ vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 0.0)
 
 # Automatic layout rendering if market data returns blank/closed metrics
 if nifty_spot == 0.0:
-    nifty_spot = 25120.00
-    nifty_fut = 25135.00
-    vix = 13.20
+    nifty_spot = 5120.00
+    nifty_fut = 5135.00
+    vix = 3.20
 
 # Dynamic target indicators calculations
-pcr = 0.91
-advances, declines = 34, 16
+pcr = 0.01
+advances, declines = 11, 11
 support = int((nifty_spot // 100) * 100)
 resistance = support + 200
 expiry_range = f"{support} - {resistance}"
