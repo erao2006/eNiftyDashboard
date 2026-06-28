@@ -39,7 +39,6 @@ def fetch_market_snapshot():
     index_payload = {"NSE_INDEX": [13]}
     fno_payload = {"NSE_FNO": [40001, 35002]}
     
-    # Fetch Index Spot
     try:
         idx_resp = dhan.ohlc_data(securities=index_payload)
         if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
@@ -51,7 +50,6 @@ def fetch_market_snapshot():
     except Exception as e:
         st.error(f"🔴 Dhan Index API Crash: 500 | {e}")
         
-    # Fetch Futures and Options Data
     try:
         fno_resp = dhan.quote_data(securities=fno_payload)
         if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
@@ -102,11 +100,66 @@ def fetch_positions():
         st.error(f"🔴 Dhan Positions API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
+# ----------------------------------------------------
+# Dynamic Logic: Fetch Last Actual Market Working Day (Zero-Fallback)
+# ----------------------------------------------------
+@st.cache_data(ttl=1800)
+def fetch_last_working_day_data():
+    """
+    Looks backward dynamically to discover the most recent active trading day context,
+    defaulting cleanly to 0 values if the endpoint is blocked or unreachable.
+    """
+    fixed_historical_snapshot = {
+        "working_date": "Unknown", 
+        "close_price": 0.0, 
+        "adv": 0, 
+        "dec": 0, 
+        "status": "No Historical Connection"
+    }
+    
+    # Check trailing 7 days sequentially to locate the latest active market session
+    for i in range(1, 8):
+        target_date = datetime.date.today() - datetime.timedelta(days=i)
+        date_str = target_date.strftime("%Y-%m-%d")
+        
+        try:
+            hist_response = dhan.historical_daily_data(
+                security_id="13",
+                exchange_segment="IDX_I",
+                instrument_type="INDEX",
+                from_date=date_str,
+                to_date=date_str
+            )
+            if isinstance(hist_response, dict) and hist_response.get("status") == "success":
+                records = hist_response.get("data", [])
+                if records:
+                    # Found active day data context
+                    fixed_historical_snapshot["working_date"] = target_date.strftime("%d-%b-%Y")
+                    fixed_historical_snapshot["close_price"] = float(records[0].get("close", 0.0))
+                    fixed_historical_snapshot["adv"] = 0  # Default zero as requested if not provided by endpoint
+                    fixed_historical_snapshot["dec"] = 0  
+                    fixed_historical_snapshot["status"] = "Success (API Live)"
+                    return fixed_historical_snapshot
+        except Exception:
+            pass
+
+    # If loop concludes without breaking out due to network blocks/closed state, apply clean structural zeros
+    if fixed_historical_snapshot["close_price"] == 0.0:
+        fallback_date = datetime.date.today() - datetime.timedelta(days=1)
+        fixed_historical_snapshot["working_date"] = fallback_date.strftime("%d-%b-%Y")
+        fixed_historical_snapshot["close_price"] = 0.00
+        fixed_historical_snapshot["adv"] = 0
+        fixed_historical_snapshot["dec"] = 0
+        fixed_historical_snapshot["status"] = "Fallback Active (Zeros Applied)"
+        
+    return fixed_historical_snapshot
+
 # Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
 market_data = fetch_market_snapshot()
 orders_df = fetch_orders()
 positions_df = fetch_positions()
+working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
 # 4. Pure Real-Time Market Metric Extraction (Zeros Fallback)
@@ -262,6 +315,36 @@ if not orders_df.empty:
     st.dataframe(orders_df, use_container_width=True, hide_index=True)
 else:
     st.info("No orders processed today.")
+
+# ----------------------------------------------------
+# 9. Isolated Past Market Settlement Block (Dynamic Last Working Day)
+# ----------------------------------------------------
+st.markdown("### 🏛️ Past Fixed Settlement Snapshot")
+fixed_thursday_html = f"""
+<div class="terminal-box" style="border-top: 3px solid #F1C40F;">
+    <div class="terminal-row">
+        <span class="label">LAST WORKING DATE</span>
+        <span class="value-neutral">{working_day_data["working_date"]}</span>
+    </div>
+    <div class="terminal-row">
+        <span class="label">NIFTY CLOSE</span>
+        <span class="value">{working_day_data["close_price"]:,.2f}</span>
+    </div>
+    <div class="terminal-row">
+        <span class="label">ADVANCES</span>
+        <span class="value" style="color: #00FF66;">{working_day_data["adv"]}</span>
+    </div>
+    <div class="terminal-row">
+        <span class="label">DECLINES</span>
+        <span class="value" style="color: #FF4D4D;">{working_day_data["dec"]}</span>
+    </div>
+    <div class="terminal-row">
+        <span class="label">ENGINE LOG</span>
+        <span class="value" style="color: #888888; font-size: 0.9em;">{working_day_data["status"]}</span>
+    </div>
+</div>
+"""
+st.markdown(fixed_thursday_html, unsafe_allow_html=True)
 
 # Sync Footer
 ist_zone = ZoneInfo("Asia/Kolkata")
