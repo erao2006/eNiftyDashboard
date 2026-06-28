@@ -154,4 +154,4 @@ terminal_html = f"""
 </div>
 """
 
-st.markdown(terminal_html, unsafe_allowed_html=True)
+st.markdown(terminal_html, unsafe_allow_html=True)  # Fixed here too
