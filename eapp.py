@@ -11,7 +11,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Must remain at the top and only run once
 st.set_page_config(page_title="Dhan Monitor", layout="centered")
 
 # ----------------------------------------------------
@@ -21,7 +20,6 @@ try:
     CLIENT_ID = st.secrets["DHAN_CLIENT_ID"]
     ACCESS_TOKEN = st.secrets["DHAN_ACCESS_TOKEN"]
 except Exception:
-    # Local hardcoded fallback strings
     CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
     ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
 
@@ -33,25 +31,39 @@ except Exception as init_err:
     st.stop()
 
 # ----------------------------------------------------
-# 3. Precise Data Fetching Methods
+# 3. Secure Multi-Engine Fetching Logic
 # ----------------------------------------------------
 @st.cache_data(ttl=3)  
 def fetch_market_snapshot():
-    # Strict Exchange dictionary rules for Dhan HQ v2
-    securities_payload = {
-        "IDX_I": [13],            # Nifty 50 Index Spot
+    # Tradable derivative contracts strictly mapped to NSE_FNO
+    fno_payload = {
         "NSE_FNO": [40001, 35002] # Nifty Future & India VIX
     }
+    
+    # Separate dedicated layout payload structure for the main Spot Index
+    index_payload = {
+        "NSE_INDEX": [13]         # Nifty 50 Index Spot ID
+    }
+    
+    master_data = {}
+    
+    # Part A: Fetch derivatives (Futures/VIX) via regular quote engine
     try:
-        response = dhan.quote_data(securities=securities_payload)
-        if isinstance(response, dict) and response.get("status") == "success":
-            return response.get("data", {})
-        else:
-            # Output background logging instead of crashing your mobile view
-            logger.warning(f"Dhan Backend Output Template: {response}")
+        fno_resp = dhan.quote_data(securities=fno_payload)
+        if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
+            master_data.update(fno_resp.get("data", {}))
     except Exception as e:
-        logger.error(f"Error establishing network connection: {e}")
-    return {}
+        logger.error(f"FNO segment query failed: {e}")
+        
+    # Part B: Fetch Spot Index safely using the standard dedicated ohlc ticker parser
+    try:
+        idx_resp = dhan.ohlc_data(securities=index_payload)
+        if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
+            master_data.update(idx_resp.get("data", {}))
+    except Exception as e:
+        logger.error(f"Spot index segment query failed: {e}")
+        
+    return master_data
 
 def fetch_orders():
     try:
@@ -66,24 +78,24 @@ def fetch_orders():
         logger.error(f"Could not load order book: {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'quantity', 'price', 'orderStatus'])
 
-# Fetch live state tracking elements
+# Trigger queries
 data = fetch_market_snapshot()
 orders_df = fetch_orders()
 
 # ----------------------------------------------------
-# 4. Fallback Logic & Calculated Parameters
+# 4. Extraction & Baseline Mock Layers
 # ----------------------------------------------------
-nifty_spot = data.get("IDX_I", {}).get("13", {}).get("last_price", 0.0)
+nifty_spot = data.get("NSE_INDEX", {}).get("13", {}).get("last_price", 0.0)
 nifty_fut = data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 0.0)
 vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 0.0)
 
-# If market is closed or keys are completely blank, inject baseline mock indicators
+# Automatic layout rendering if market data returns blank/closed metrics
 if nifty_spot == 0.0:
     nifty_spot = 25120.00
     nifty_fut = 25135.00
     vix = 13.20
 
-# Derive dynamic terminal values based on real-time movements
+# Dynamic target indicators calculations
 pcr = 0.91
 advances, declines = 34, 16
 support = int((nifty_spot // 100) * 100)
@@ -92,7 +104,7 @@ expiry_range = f"{support} - {resistance}"
 breadth = "BULLISH" if advances > declines else "BEARISH"
 
 # ----------------------------------------------------
-# 5. CSS Stylesheet Injection
+# 5. UI Layout Display Styles
 # ----------------------------------------------------
 st.markdown(
     """
@@ -128,9 +140,6 @@ st.title("Nifty 50 Live Monitor")
 ist_zone = ZoneInfo("Asia/Kolkata")
 current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
 
-# ----------------------------------------------------
-# 6. HTML Terminal Layout Block
-# ----------------------------------------------------
 terminal_html = f"""
 <div class="terminal-box">
     <div class="terminal-row">
@@ -190,7 +199,7 @@ terminal_html = f"""
 st.markdown(terminal_html, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 7. Orders Interface Section
+# 6. Orders Interface Section
 # ----------------------------------------------------
 st.markdown("### 📦 Today's Orders")
 if not orders_df.empty:
@@ -198,5 +207,4 @@ if not orders_df.empty:
 else:
     st.info("No active orders found for today.")
 
-# Singular timestamp synchronization output at bottom footer
 st.markdown(f"<div style='padding-left: 5px; color: #666666; font-size: 0.85em; font-family: monospace;'>Updated :<br>{current_time}</div>", unsafe_allow_html=True)
