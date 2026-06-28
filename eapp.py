@@ -5,6 +5,7 @@ from dhanhq import dhanhq
 import datetime
 import streamlit as st
 from dhanhq import dhanhq, DhanContext  # Added DhanContext here
+from zoneinfo import ZoneInfo
 
 # ----------------------------------------------------
 # 1. API Configuration (Using Secrets for Security)
@@ -92,7 +93,11 @@ st.markdown(
 
 st.title("Nifty 50 data")
 
-current_time = datetime.datetime.now().strftime("%d-%b-%Y %H:%M:%S IST")
+# Force Python to look up the exact time in the Asia/Kolkata (IST) timezone
+ist_zone = ZoneInfo("Asia/Kolkata")
+current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
+
+# current_time = datetime.datetime.now().strftime("%d-%b-%Y %H:%M:%S IST")
 
 terminal_html = f"""
 <div class="terminal-box">
