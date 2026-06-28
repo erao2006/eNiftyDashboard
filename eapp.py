@@ -6,8 +6,13 @@ from dhanhq import dhanhq
 # 1. API Configuration
 # ----------------------------------------------------
 # Replace these with your actual Dhan API credentials
-CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
-ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
+# CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
+# ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
+
+# Fetch credentials safely from Streamlit's encrypted vault
+CLIENT_ID = st.secrets["DHAN_CLIENT_ID"]
+ACCESS_TOKEN = st.secrets["DHAN_ACCESS_TOKEN"]
+
 
 dhan = dhanhq(CLIENT_ID, ACCESS_TOKEN)
 
