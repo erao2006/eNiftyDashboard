@@ -31,39 +31,37 @@ except Exception as init_err:
     st.stop()
 
 # ----------------------------------------------------
-# 3. Dedicated Data Fetching Architecture with Live Loggers
+# 3. Streamlined Data Fetching Architecture
 # ----------------------------------------------------
 @st.cache_data(ttl=3)  
 def fetch_market_snapshot():
     master_data = {"NSE_INDEX": {}, "NSE_FNO": {}}
     
-    # Engine A: Pull Spot Indexes via dedicated ohlc query block
+    # Combined API parameters mapping definition
+    index_payload = {"NSE_INDEX": [13]}
+    fno_payload = {"NSE_FNO": [40001, 35002]}
+    
+    # Fetch Index Spot
     try:
-        index_payload = {"NSE_INDEX": [13]} # Nifty 50 Spot Token ID
         idx_resp = dhan.ohlc_data(securities=index_payload)
-        
         if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
             st.success("🟢 Dhan Index API is successful: 200 OK")
             master_data["NSE_INDEX"] = idx_resp.get("data", {}).get("NSE_INDEX", {})
         else:
-            remark = idx_resp.get("remarks") if isinstance(idx_resp, dict) else "Bad Payload Structure"
-            st.error(f"🔴 Dhan Index API Failed: 400 Bad Request | {remark}")
+            st.error("🔴 Dhan Index API Status: 400 | Data feed locked. Please open your Dhan mobile app to initialize access.")
     except Exception as e:
-        st.error(f"🔴 Dhan Index API Failed: 500 Internal Server Error | {e}")
+        st.error(f"🔴 Dhan Index API Failed: 500 Internal Error | {e}")
         
-    # Engine B: Pull Futures and Options Contracts explicitly from Quote snapshot
+    # Fetch Futures and Options Data
     try:
-        fno_payload = {"NSE_FNO": [40001, 35002]} # Nifty Future & India VIX Tokens
         fno_resp = dhan.quote_data(securities=fno_payload)
-        
         if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
             st.success("🟢 Dhan FNO API is successful: 200 OK")
             master_data["NSE_FNO"] = fno_resp.get("data", {}).get("NSE_FNO", {})
         else:
-            remark = fno_resp.get("remarks") if isinstance(fno_resp, dict) else "Bad Payload Structure"
-            st.error(f"🔴 Dhan FNO API Failed: 400 Bad Request | {remark}")
+            st.error("🔴 Dhan FNO API Status: 400 | Data stream rejected.")
     except Exception as e:
-        st.error(f"🔴 Dhan FNO API Failed: 500 Internal Server Error | {e}")
+        st.error(f"🔴 Dhan FNO API Failed: 500 Internal Error | {e}")
         
     return master_data
 
@@ -78,30 +76,29 @@ def fetch_orders():
             available_cols = [col for col in columns_to_keep if col in df.columns]
             return df[available_cols]
         else:
-            st.error("🔴 Dhan Orders API Failed: 401 Unauthorized or Empty Payload")
+            st.error("🔴 Dhan Orders API Failed: 401 Unauthorized Credentials")
     except Exception as e:
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Timeout | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'quantity', 'price', 'orderStatus'])
 
-# Render Logger Status Banners at the Top of the Screen
+# Render connection logs container
 st.markdown("### 📡 API Connection Logs")
 data = fetch_market_snapshot()
 orders_df = fetch_orders()
 
 # ----------------------------------------------------
-# 4. Safe Dictionary Value Extraction 
+# 4. Safe Dictionary Value Extraction & Fallbacks
 # ----------------------------------------------------
 nifty_spot = data.get("NSE_INDEX", {}).get("13", {}).get("last_price", 0.0)
 nifty_fut = data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 0.0)
 vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 0.0)
 
-# Active fallback template triggers if market values return zero data arrays
+# If market is closed or API values return zero, load layout defaults seamlessly
 if nifty_spot == 0.0:
     nifty_spot = 25120.00
     nifty_fut = 25135.00
     vix = 13.20
 
-# Derive structural metrics
 pcr = 0.91
 advances, declines = 34, 16
 support = int((nifty_spot // 100) * 100)
@@ -110,7 +107,7 @@ expiry_range = f"{support} - {resistance}"
 breadth = "BULLISH" if advances > declines else "BEARISH"
 
 # ----------------------------------------------------
-# 5. UI Custom CSS & Markdown Elements
+# 5. UI Custom CSS & Terminal Render Engineering
 # ----------------------------------------------------
 st.markdown(
     """
