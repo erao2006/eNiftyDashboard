@@ -49,9 +49,9 @@ nifty_fut = data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 25135.00)
 vix = data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 13.20)
 
 # Derivative metrics placeholders
-pcr = 0.91 
-advances, declines = 34, 16
-support, resistance = 25000, 25200
+pcr = 0.00
+advances, declines = 11, 11
+support, resistance = 5000, 5200
 expiry_range = f"{support} – {resistance}"
 breadth = "BULLISH"
 
@@ -90,7 +90,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("Final Screen Layout")
+st.title("Nifty 50 data")
 
 current_time = datetime.datetime.now().strftime("%d-%b-%Y %H:%M:%S IST")
 
