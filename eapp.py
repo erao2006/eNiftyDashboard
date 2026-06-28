@@ -87,7 +87,7 @@ st.markdown(
     .value-neutral { font-weight: bold; color: #F1C40F; }
     </style>
     """, 
-    unsafe_allowed_html=True
+    unsafe_allow_html=True
 )
 
 st.title("Final Screen Layout")
