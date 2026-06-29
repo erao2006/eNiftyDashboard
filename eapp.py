@@ -185,15 +185,6 @@ NIFTY50_SYMBOLS = [
     "TITAN", "TRENT", "ULTRACEMCO", "WIPRO"
 ]
 
-# Authentication
-try:
-    CLIENT_ID = st.secrets["DHAN_CLIENT_ID"]
-    ACCESS_TOKEN = st.secrets["DHAN_ACCESS_TOKEN"]
-    dhan = dhanhq(CLIENT_ID, ACCESS_TOKEN)
-except Exception as e:
-    st.error(f"🔴 Auth Error: {e}")
-    st.stop()
-
 # ----------------------------------------------------
 # 2. Data Engine
 # ----------------------------------------------------
