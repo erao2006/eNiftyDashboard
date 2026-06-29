@@ -172,7 +172,7 @@ def get_nifty50_ad():
 # ---- test to display nifty 50 security values
 
 # Downloaded from Dhan
-df = pd.read_csv("api-scrip-master.csv")
+# df = pd.read_csv("api-scrip-master.csv")
 
 # Keep only NSE Equity
 df = df[df["SEM_SEGMENT"] == "NSE_EQ"]
