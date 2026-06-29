@@ -35,16 +35,23 @@ except Exception as init_err:
 # ----------------------------------------------------
 @st.cache_data(ttl=1)  
 def fetch_market_snapshot():
-    # Structural keys are preserved so the rest of your app doesn't break
     master_data = {"NSE_INDEX": {}, "NSE_FNO": {}}
     
+    # CORRECTED API PAYLOAD FORMAT
+    index_payload = {
+        "exchangeSegment": "IDX_I",
+        "securityId": "13",
+        "instrumentType": "INDEX"
+    }
+    
+    fno_payload = {
+        "exchangeSegment": "NSE_FNO",
+        "securityId": "14366",  # Nifty Near Month Future Contract ID
+        "instrumentType": "FUTIDX"
+    }
+    
     try:
-        # 🟢 FIXED: Using the native get_ohlc SDK method to handle structural encoding perfectly
-        idx_resp = dhan.get_ohlc(
-            security_id="13", 
-            exchange_segment="IDX_I", 
-            instrument_type="INDEX"
-        )
+        idx_resp = dhan.ohlc_data(securities=index_payload)
         if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
             st.success("🟢 Dhan Index API successful: 200 OK")
             master_data["NSE_INDEX"] = idx_resp.get("data", {})
@@ -55,12 +62,7 @@ def fetch_market_snapshot():
         st.error(f"🔴 Dhan Index API Crash: 500 | {e}")
         
     try:
-        # 🟢 FIXED: Fetch Nifty Futures using the clean quote method to bypass contract ID expiration traps
-        fno_resp = dhan.get_quote(
-            security_id="13", 
-            exchange_segment="NSE_FNO", 
-            instrument_type="FUTIDX"
-        )
+        fno_resp = dhan.quote_data(securities=fno_payload)
         if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
             st.success("🟢 Dhan FNO API successful: 200 OK")
             master_data["NSE_FNO"] = fno_resp.get("data", {})
@@ -167,15 +169,14 @@ positions_df = fetch_positions()
 working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
-# 5. Pure Real-Time Market Metric Extraction (Guaranteed Safe Parse)
+# 5. Pure Real-Time Market Metric Extraction (Safe Traversal)
 # ----------------------------------------------------
-# 🟢 FIXED: Adjusted to precisely capture the single asset objects returned by standard quote endpoints
-nifty_spot = market_data.get("NSE_INDEX", {}).get("last_price", 0.0)
+nifty_spot = market_data.get("NSE_INDEX", {}).get("lastPrice", 0.0)
 if nifty_spot == 0.0:
     nifty_spot = market_data.get("NSE_INDEX", {}).get("ohlc", {}).get("last_price", 0.0)
 
-nifty_fut = market_data.get("NSE_FNO", {}).get("last_price", 0.0)
-vix = 0.0  # Safe zero implementation until dynamic VIX contract mapping is needed
+nifty_fut = market_data.get("NSE_FNO", {}).get("lastPrice", 0.0)
+vix = 0.0  
 
 if nifty_spot > 0:
     support = int((nifty_spot // 100) * 100)
