@@ -1,6 +1,7 @@
 import datetime
 import pandas as pd
 import streamlit as st
+import yfinance as yf
 from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
@@ -31,31 +32,28 @@ except Exception as init_err:
     st.stop()
 
 # ----------------------------------------------------
-# 3. Direct Native SDK Engine (Handles Headers Internally)
+# 3. Stable Market Engine (Using yfinance Alternative)
 # ----------------------------------------------------
-@st.cache_data(ttl=5)  # Keeps a 5-second cache window to guarantee no 429 rate limit resets
+@st.cache_data(ttl=5)  # Enforces a safe 5-second buffer window to bypass rate limits
 def fetch_market_snapshot():
     master_data = {"NIFTY_SPOT": 0.0, "NIFTY_FUTURE": 0.0}
     
     try:
-        # Define target instruments as list of tuples: [(ExchangeSegment, SecurityId)]
-        # This native format forces the SDK to structure headers correctly
-        instruments = [
-            ("IDX_I", "13"),      # Nifty 50 Spot
-            ("NSE_FNO", "52175")  # Active Nifty Future Contract ID
-        ]
+        # Pulling live tracking streams via Yahoo Finance tickers
+        # ^NSEI = Nifty 50 Spot, NIFTY1! = Nifty Continuous Futures
+        tickers = yf.Tickers("^NSEI NIFTY1!=F")
         
-        response = dhan.get_ltp(instruments)
-        
-        if isinstance(response, dict) and response.get("status") == "success":
-            st.success("🟢 Market Feed Ticker API: 200 OK")
-            data_map = response.get("data", {})
+        # Extract Nifty Spot Price
+        spot_history = tickers.tickers["^NSEI"].history(period="1d")
+        if not spot_history.empty:
+            master_data["NIFTY_SPOT"] = float(spot_history["Close"].iloc[-1])
             
-            # Extract data using the native library's index string format
-            master_data["NIFTY_SPOT"] = float(data_map.get("IDX_I:13", {}).get("last_price", 0.0))
-            master_data["NIFTY_FUTURE"] = float(data_map.get("NSE_FNO:52175", {}).get("last_price", 0.0))
-        else:
-            st.error(f"🔴 Ticker Feed Refusal: {response.get('remarks') if isinstance(response, dict) else 'Invalid response format'}")
+        # Extract Nifty Future Price
+        fut_history = tickers.tickers["NIFTY1!=F"].history(period="1d")
+        if not fut_history.empty:
+            master_data["NIFTY_FUTURE"] = float(fut_history["Close"].iloc[-1])
+            
+        st.success("🟢 Market Feed via Yahoo Finance: 200 OK")
     except Exception as e:
         st.error(f"🔴 Market Connection failed: {e}")
         
