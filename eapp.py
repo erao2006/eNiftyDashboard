@@ -210,6 +210,9 @@ quotes = dhan.ohlc_data(
     }
 )
 
+print(type(quotes))
+print(quotes)
+
 advance = decline = unchanged = 0
 
 for stock in quotes["data"]["NSE_EQ"].values():
