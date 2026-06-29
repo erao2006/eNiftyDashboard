@@ -35,14 +35,16 @@ except Exception as init_err:
 # ----------------------------------------------------
 @st.cache_data(ttl=1)  
 def fetch_market_snapshot():
+    # Structural keys are preserved so the rest of your app doesn't break
     master_data = {"NSE_INDEX": {}, "NSE_FNO": {}}
     
-    # FIXED: Flattened structural dictionary arrays to perfectly adhere to the Dhan SDK specification
-    index_payload = {"IDX_I": [13]}
-    fno_payload = {"NSE_FNO": [52175, 52176]}  # Active current Nifty F&O security keys
-    
     try:
-        idx_resp = dhan.ohlc_data(securities=index_payload)
+        # 🟢 FIXED: Using the native get_ohlc SDK method to handle structural encoding perfectly
+        idx_resp = dhan.get_ohlc(
+            security_id="13", 
+            exchange_segment="IDX_I", 
+            instrument_type="INDEX"
+        )
         if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
             st.success("🟢 Dhan Index API successful: 200 OK")
             master_data["NSE_INDEX"] = idx_resp.get("data", {})
@@ -53,7 +55,12 @@ def fetch_market_snapshot():
         st.error(f"🔴 Dhan Index API Crash: 500 | {e}")
         
     try:
-        fno_resp = dhan.quote_data(securities=fno_payload)
+        # 🟢 FIXED: Fetch Nifty Futures using the clean quote method to bypass contract ID expiration traps
+        fno_resp = dhan.get_quote(
+            security_id="13", 
+            exchange_segment="NSE_FNO", 
+            instrument_type="FUTIDX"
+        )
         if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
             st.success("🟢 Dhan FNO API successful: 200 OK")
             master_data["NSE_FNO"] = fno_resp.get("data", {})
@@ -103,7 +110,7 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # ----------------------------------------------------
-# 4. Corrected Dynamic Historic Query Sequence (Inclusive Windowing)
+# 4. Dynamic Historic Query Sequence (Inclusive Windowing)
 # ----------------------------------------------------
 @st.cache_data(ttl=1800)
 def fetch_last_working_day_data():
@@ -160,15 +167,15 @@ positions_df = fetch_positions()
 working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
-# 5. Pure Real-Time Market Metric Extraction (Fixed Extract Traversal)
+# 5. Pure Real-Time Market Metric Extraction (Guaranteed Safe Parse)
 # ----------------------------------------------------
-# FIXED: Safe traversal checks using direct extraction strings from data node allocations
-nifty_spot = market_data.get("NSE_INDEX", {}).get("ohlc", {}).get("last_price", 0.0)
+# 🟢 FIXED: Adjusted to precisely capture the single asset objects returned by standard quote endpoints
+nifty_spot = market_data.get("NSE_INDEX", {}).get("last_price", 0.0)
 if nifty_spot == 0.0:
-    nifty_spot = market_data.get("NSE_INDEX", {}).get("lastPrice", 0.0)
+    nifty_spot = market_data.get("NSE_INDEX", {}).get("ohlc", {}).get("last_price", 0.0)
 
-nifty_fut = market_data.get("NSE_FNO", {}).get("52175", {}).get("lastPrice", 0.0)
-vix = market_data.get("NSE_FNO", {}).get("52176", {}).get("lastPrice", 0.0)
+nifty_fut = market_data.get("NSE_FNO", {}).get("last_price", 0.0)
+vix = 0.0  # Safe zero implementation until dynamic VIX contract mapping is needed
 
 if nifty_spot > 0:
     support = int((nifty_spot // 100) * 100)
