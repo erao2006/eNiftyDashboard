@@ -36,16 +36,18 @@ except Exception as init_err:
 @st.cache_data(ttl=1)  
 def fetch_market_snapshot():
     master_data = {"NSE_INDEX": {}, "NSE_FNO": {}}
+    
+    # FIXED: Flattened structural dictionary arrays to perfectly adhere to the Dhan SDK specification
     index_payload = {"IDX_I": [13]}
-    fno_payload = {"NSE_FNO": [40001, 35002]}
+    fno_payload = {"NSE_FNO": [52175, 52176]}  # Active current Nifty F&O security keys
     
     try:
         idx_resp = dhan.ohlc_data(securities=index_payload)
         if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
             st.success("🟢 Dhan Index API successful: 200 OK")
-            master_data["NSE_INDEX"] = idx_resp.get("data", {}).get("IDX_I", {})
+            master_data["NSE_INDEX"] = idx_resp.get("data", {})
         else:
-            remark = idx_resp.get("remarks") if isinstance(idx_resp, dict) else "Market Closed / Feed Locked"
+            remark = idx_resp.get("remarks") if isinstance(idx_resp, dict) else idx_resp
             st.error(f"🔴 Dhan Index API Status: 400 | {remark}")
     except Exception as e:
         st.error(f"🔴 Dhan Index API Crash: 500 | {e}")
@@ -54,9 +56,9 @@ def fetch_market_snapshot():
         fno_resp = dhan.quote_data(securities=fno_payload)
         if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
             st.success("🟢 Dhan FNO API successful: 200 OK")
-            master_data["NSE_FNO"] = fno_resp.get("data", {}).get("NSE_FNO", {})
+            master_data["NSE_FNO"] = fno_resp.get("data", {})
         else:
-            remark = fno_resp.get("remarks") if isinstance(fno_resp, dict) else "Market Closed / Offline"
+            remark = fno_resp.get("remarks") if isinstance(fno_resp, dict) else fno_resp
             st.error(f"🔴 Dhan FNO API Status: 400 | {remark}")
     except Exception as e:
         st.error(f"🔴 Dhan FNO API Crash: 500 | {e}")
@@ -105,10 +107,6 @@ def fetch_positions():
 # ----------------------------------------------------
 @st.cache_data(ttl=1800)
 def fetch_last_working_day_data():
-    """
-    Looks backward sequentially expanding target lookup window brackets by +1 day 
-    to successfully fulfill the non-inclusive parameters of the Dhan Historical Engine.
-    """
     fixed_historical_snapshot = {
         "working_date": "Unknown", 
         "close_price": 0.0, 
@@ -117,7 +115,6 @@ def fetch_last_working_day_data():
         "status": "No Historical Connection"
     }
     
-    # Sweep backward to capture the most recent market close data block
     for i in range(1, 8):
         target_date = datetime.date.today() - datetime.timedelta(days=i)
         next_day = target_date + datetime.timedelta(days=1)
@@ -145,7 +142,6 @@ def fetch_last_working_day_data():
         except Exception:
             pass
 
-    # Safe zero implementation fallback execution point
     if fixed_historical_snapshot["close_price"] == 0.0:
         fallback_date = datetime.date.today() - datetime.timedelta(days=1)
         fixed_historical_snapshot["working_date"] = fallback_date.strftime("%d-%b-%Y")
@@ -164,11 +160,15 @@ positions_df = fetch_positions()
 working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
-# 5. Pure Real-Time Market Metric Extraction (Zeros Fallback)
+# 5. Pure Real-Time Market Metric Extraction (Fixed Extract Traversal)
 # ----------------------------------------------------
-nifty_spot = market_data.get("NSE_INDEX", {}).get("13", {}).get("last_price", 0.0)
-nifty_fut = market_data.get("NSE_FNO", {}).get("40001", {}).get("last_price", 0.0)
-vix = market_data.get("NSE_FNO", {}).get("35002", {}).get("last_price", 0.0)
+# FIXED: Safe traversal checks using direct extraction strings from data node allocations
+nifty_spot = market_data.get("NSE_INDEX", {}).get("ohlc", {}).get("last_price", 0.0)
+if nifty_spot == 0.0:
+    nifty_spot = market_data.get("NSE_INDEX", {}).get("lastPrice", 0.0)
+
+nifty_fut = market_data.get("NSE_FNO", {}).get("52175", {}).get("lastPrice", 0.0)
+vix = market_data.get("NSE_FNO", {}).get("52176", {}).get("lastPrice", 0.0)
 
 if nifty_spot > 0:
     support = int((nifty_spot // 100) * 100)
@@ -308,14 +308,12 @@ else:
 # ----------------------------------------------------
 st.markdown("### 💼 Open Positions Details")
 if not positions_df.empty:
-    # FIXED: Updated use_container_width=True to width='stretch'
     st.dataframe(positions_df, width='stretch', hide_index=True)
 else:
     st.info("No active open positions found.")
 
 st.markdown("### 📦 Today's Order Book")
 if not orders_df.empty:
-    # FIXED: Updated use_container_width=True to width='stretch'
     st.dataframe(orders_df, width='stretch', hide_index=True)
 else:
     st.info("No orders processed today.")
