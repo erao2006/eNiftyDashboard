@@ -171,34 +171,54 @@ def get_nifty50_ad():
 # -------
 # ---- test to display nifty 50 security values
 
-# Downloaded from Dhan
-# df = pd.read_csv("api-scrip-master.csv")
-
-# Keep only NSE Equity
-df = df[df["SEM_SEGMENT"] == "NSE_EQ"]
-
-# Nifty 50 symbols
-NIFTY50 = [
+NIFTY50_SYMBOLS = [
     "ADANIENT","ADANIPORTS","APOLLOHOSP","ASIANPAINT","AXISBANK",
-    "BAJAJ-AUTO","BAJFINANCE","BAJAJFINSV","BEL","BHARTIARTL",
+    "BAJAJ-AUTO","BAJAJFINSV","BAJFINANCE","BEL","BHARTIARTL",
     "CIPLA","COALINDIA","DRREDDY","EICHERMOT","ETERNAL",
     "GRASIM","HCLTECH","HDFCBANK","HDFCLIFE","HEROMOTOCO",
     "HINDALCO","HINDUNILVR","ICICIBANK","INDUSINDBK","INFY",
     "ITC","JIOFIN","JSWSTEEL","KOTAKBANK","LT",
     "M&M","MARUTI","NESTLEIND","NTPC","ONGC",
-    "POWERGRID","RELIANCE","SBILIFE","SHRIRAMFIN","SBIN",
+    "POWERGRID","RELIANCE","SBILIFE","SBIN","SHRIRAMFIN",
     "SUNPHARMA","TATACONSUM","TATAMOTORS","TATASTEEL","TCS",
     "TECHM","TITAN","TRENT","ULTRACEMCO","WIPRO"
 ]
 
-mapping = {}
+@st.cache_data(ttl=86400)
+def load_security_ids():
+    url = "https://images.dhan.co/api-data/api-scrip-master.csv"
+    df = pd.read_csv(url)
+    df = df[df["SEM_SEGMENT"] == "NSE_EQ"]
+    mapping = {}
 
-for sym in NIFTY50:
-    row = df[df["SEM_TRADING_SYMBOL"] == sym]
-    if not row.empty:
-        mapping[sym] = int(row.iloc[0]["SECURITY_ID"])
+    for sym in NIFTY50_SYMBOLS:
+        row = df[df["SEM_TRADING_SYMBOL"] == sym]
+        if not row.empty:
+            mapping[sym] = int(row.iloc[0]["SECURITY_ID"])
+    return mapping
 
-st.success("NSE security list:: ",{mapping})
+NIFTY50_SECURITIES = load_security_ids()
+
+security_list = {
+    "NSE_EQ": list(NIFTY50_SECURITIES.values())
+}
+
+quotes = market_feed.ohlc_data(security_list)
+
+advance = decline = unchanged = 0
+
+for stock in quotes["data"]["NSE_EQ"].values():
+    ltp = stock["last_price"]
+    prev = stock["ohlc"]["close"]
+
+    if ltp > prev:
+        advance += 1
+    elif ltp < prev:
+        decline += 1
+    else:
+        unchanged += 1
+
+st.success("NSE security list:: ",{advance})
 # ---- test ends ----
 
 # Execute Network Engine Operations
