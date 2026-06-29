@@ -38,9 +38,10 @@ except Exception as init_err:
 def fetch_market_snapshot():
     master_data = {"NIFTY_SPOT": 0.0, "NIFTY_FUTURE": 0.0}
     
+    # 🟢 FIXED: Force strictly lowercase keys required by Dhan's HTTP Gateway
     headers = {
-        "access-token": ACCESS_TOKEN,
-        "client-id": CLIENT_ID,
+        "access-token": str(ACCESS_TOKEN),
+        "client-id": str(CLIENT_ID),
         "Content-Type": "application/json"
     }
     
