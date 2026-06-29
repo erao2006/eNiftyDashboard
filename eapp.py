@@ -182,8 +182,8 @@ NIFTY50_SYMBOLS = [
     "MARUTI", "NESTLEIND", "NTPC", "ONGC", "POWERGRID",
     "RELIANCE", "SBILIFE", "SBIN", "SHRIRAMFIN", "SUNPHARMA",
     "TATACONSUM", "TATAMOTORS", "TATASTEEL", "TCS", "TECHM",
-    "TITAN", "TRENT", "ULTRACEMCO"
-    ]
+    "TITAN", "TRENT", "ULTRACEMCO", "WIPRO"
+]
 # ----------------------------------------------------
 # 3. Data Engine Functions
 # ----------------------------------------------------
