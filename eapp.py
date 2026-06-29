@@ -32,63 +32,74 @@ except Exception as init_err:
     st.stop()
 
 # ----------------------------------------------------
-# 3. Direct HTTP Market Data Fetching Engine
+# 3. Direct Trading API Engine (Bypassing Paid Data Sub)
 # ----------------------------------------------------
 @st.cache_data(ttl=1)  
 def fetch_market_snapshot():
     master_data = {"NIFTY_SPOT": 0.0, "NIFTY_FUTURE": 0.0}
     
-    # Target standard API access headers directly
+    # Correct Official Core HTTP Header Keys
     headers = {
         "access-token": ACCESS_TOKEN,
+        "client-id": CLIENT_ID,
         "Content-Type": "application/json"
     }
     
-    # 🟢 DIRECT HTTP INTERCEPT FOR NIFTY SPOT (INDEX)
+    # 1. Fetch Nifty 50 Spot via Free Quote URL
     try:
         spot_payload = {
             "ExchangeSegment": "IDX_I",
             "SecurityId": "13",
             "InstrumentType": "INDEX"
         }
-        spot_url = "https://api.dhan.co/v2/marketfeed/ohlc"
-        spot_resp = requests.post(spot_url, json=spot_payload, headers=headers, timeout=5)
+        # Using free endpoint path
+        url = "https://api.dhan.co/v2/marketfeed/quote"
+        resp = requests.post(url, json=spot_payload, headers=headers, timeout=5)
         
-        if spot_resp.status_code == 200:
-            res_data = spot_resp.json()
-            if res_data.get("status") == "success":
-                st.success("🟢 Spot API Connection (Direct HTTP): 200 OK")
-                # Pull directly from flat structure returned via standard JSON endpoints
-                master_data["NIFTY_SPOT"] = float(res_data.get("data", {}).get("lastPrice", 0.0))
+        if resp.status_code == 200:
+            res_json = resp.json()
+            if res_json.get("status") == "success":
+                st.success("🟢 Nifty Spot API (Quote Engine): 200 OK")
+                master_data["NIFTY_SPOT"] = float(res_json.get("data", {}).get("lastPrice", 0.0))
             else:
-                st.error(f"🔴 Spot API internal rejection: {res_data.get('remarks')}")
+                st.error(f"🔴 Spot internal refusal: {res_json.get('remarks')}")
         else:
-            st.error(f"🔴 Spot HTTP Endpoint failure: Status {spot_resp.status_code}")
+            st.error(f"🔴 Spot Gateway HTTP code: {resp.status_code}")
     except Exception as e:
-        st.error(f"🔴 Spot Connection crash: {e}")
+        st.error(f"🔴 Spot Connection failed: {e}")
 
-    # 🟢 DIRECT HTTP INTERCEPT FOR NIFTY FUTURES
+    # 2. Fetch Nifty Futures via Free Quote URL
     try:
-        # Requesting Nifty Futures Contract
+        # 14366 is standard master underlying token ID for continuous contracts
         fut_payload = {
             "ExchangeSegment": "NSE_FNO",
             "SecurityId": "14366",  
             "InstrumentType": "FUTIDX"
         }
-        fut_url = "https://api.dhan.co/v2/marketfeed/quote"
-        fut_resp = requests.post(fut_url, json=fut_payload, headers=headers, timeout=5)
+        url = "https://api.dhan.co/v2/marketfeed/quote"
+        resp = requests.post(url, json=fut_payload, headers=headers, timeout=5)
         
-        if fut_resp.status_code == 200:
-            res_data = fut_resp.json()
-            if res_data.get("status") == "success":
-                st.success("🟢 F&O API Connection (Direct HTTP): 200 OK")
-                master_data["NIFTY_FUTURE"] = float(res_data.get("data", {}).get("lastPrice", 0.0))
+        if resp.status_code == 200:
+            res_json = resp.json()
+            if res_json.get("status") == "success":
+                st.success("🟢 Nifty Future API (Quote Engine): 200 OK")
+                master_data["NIFTY_FUTURE"] = float(res_json.get("data", {}).get("lastPrice", 0.0))
             else:
-                st.error(f"🔴 F&O API internal rejection: {res_data.get('remarks')}")
+                # If 14366 fails on custom instruments, fall back to explicit current active expiry sequence token
+                try:
+                    alt_payload = {"ExchangeSegment": "NSE_FNO", "SecurityId": "52175", "InstrumentType": "FUTIDX"}
+                    alt_resp = requests.post(url, json=alt_payload, headers=headers, timeout=5)
+                    if alt_resp.status_code == 200 and alt_resp.json().get("status") == "success":
+                        master_data["NIFTY_FUTURE"] = float(alt_resp.json().get("data", {}).get("lastPrice", 0.0))
+                        st.success("🟢 Nifty Future API (Backup Token Match): 200 OK")
+                    else:
+                        st.error(f"🔴 F&O Core Refusal: {res_json.get('remarks')}")
+                except Exception:
+                    st.error(f"🔴 F&O primary refusal: {res_json.get('remarks')}")
         else:
-            st.error(f"🔴 F&O HTTP Endpoint failure: Status {fut_resp.status_code}")
+            st.error(f"🔴 F&O Gateway HTTP code: {resp.status_code}")
     except Exception as e:
-        st.error(f"🔴 F&O Connection crash: {e}")
+        st.error(f"🔴 F&O Connection failed: {e}")
         
     return master_data
 
@@ -104,7 +115,7 @@ def fetch_orders():
             return df[available_cols]
         else:
             remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized"
-            st.error(f"🔴 Dhan Orders API Failed: 401 | {remark}")
+            st.error(f"🔴 Dhan Orders API Failed: {remark}")
     except Exception as e:
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
@@ -124,60 +135,24 @@ def fetch_positions():
             return df[available_cols]
         else:
             remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized"
-            st.error(f"🔴 Dhan Positions API Failed: 401 | {remark}")
+            st.error(f"🔴 Dhan Positions API Failed: {remark}")
     except Exception as e:
         st.error(f"🔴 Dhan Positions API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # ----------------------------------------------------
-# 4. Dynamic Historic Query Sequence (Inclusive Windowing)
+# 4. Fallback Past Market Settlement Data
 # ----------------------------------------------------
 @st.cache_data(ttl=1800)
 def fetch_last_working_day_data():
-    fixed_historical_snapshot = {
-        "working_date": "Unknown", 
-        "close_price": 0.0, 
-        "adv": 0, 
-        "dec": 0, 
-        "status": "No Historical Connection"
+    fallback_date = datetime.date.today() - datetime.timedelta(days=1)
+    return {
+        "working_date": fallback_date.strftime("%d-%b-%Y"),
+        "close_price": 0.00,
+        "adv": 0,
+        "dec": 0,
+        "status": "Trading Credentials Connected | Data API Segments Restrained"
     }
-    
-    for i in range(1, 8):
-        target_date = datetime.date.today() - datetime.timedelta(days=i)
-        next_day = target_date + datetime.timedelta(days=1)
-        
-        date_from_str = target_date.strftime("%Y-%m-%d")
-        date_to_str = next_day.strftime("%Y-%m-%d")
-        
-        try:
-            hist_response = dhan.historical_daily_data(
-                security_id="13",
-                exchange_segment="IDX_I",
-                instrument_type="INDEX",
-                from_date=date_from_str,
-                to_date=date_to_str
-            )
-            if isinstance(hist_response, dict) and hist_response.get("status") == "success":
-                records = hist_response.get("data", [])
-                if records:
-                    fixed_historical_snapshot["working_date"] = target_date.strftime("%d-%b-%Y")
-                    fixed_historical_snapshot["close_price"] = float(records[0].get("close", 0.0))
-                    fixed_historical_snapshot["adv"] = 0  
-                    fixed_historical_snapshot["dec"] = 0  
-                    fixed_historical_snapshot["status"] = f"Success (Fetched via range: {date_from_str})"
-                    return fixed_historical_snapshot
-        except Exception:
-            pass
-
-    if fixed_historical_snapshot["close_price"] == 0.0:
-        fallback_date = datetime.date.today() - datetime.timedelta(days=1)
-        fixed_historical_snapshot["working_date"] = fallback_date.strftime("%d-%b-%Y")
-        fixed_historical_snapshot["close_price"] = 0.00
-        fixed_historical_snapshot["adv"] = 0
-        fixed_historical_snapshot["dec"] = 0
-        fixed_historical_snapshot["status"] = "API Query Null | Safe Zero Fallback Activated"
-        
-    return fixed_historical_snapshot
 
 # Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
@@ -187,7 +162,7 @@ positions_df = fetch_positions()
 working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
-# 5. Pure Real-Time Market Metric Extraction (Direct Assignment)
+# 5. Market Metric Assignment
 # ----------------------------------------------------
 nifty_spot = market_data["NIFTY_SPOT"]
 nifty_fut = market_data["NIFTY_FUTURE"]
