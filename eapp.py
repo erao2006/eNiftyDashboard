@@ -1,6 +1,7 @@
 import datetime
 import pandas as pd
 import streamlit as st
+import requests
 from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
@@ -31,46 +32,63 @@ except Exception as init_err:
     st.stop()
 
 # ----------------------------------------------------
-# 3. Pure API Trading Data Fetching Engine (Zero-Simulation)
+# 3. Direct HTTP Market Data Fetching Engine
 # ----------------------------------------------------
 @st.cache_data(ttl=1)  
 def fetch_market_snapshot():
-    master_data = {"NSE_INDEX": {}, "NSE_FNO": {}}
+    master_data = {"NIFTY_SPOT": 0.0, "NIFTY_FUTURE": 0.0}
     
-    # CORRECTED API PAYLOAD FORMAT
-    index_payload = {
-        "exchangeSegment": "IDX_I",
-        "securityId": "13",
-        "instrumentType": "INDEX"
+    # Target standard API access headers directly
+    headers = {
+        "access-token": ACCESS_TOKEN,
+        "Content-Type": "application/json"
     }
     
-    fno_payload = {
-        "exchangeSegment": "NSE_FNO",
-        "securityId": "14366",  # Nifty Near Month Future Contract ID
-        "instrumentType": "FUTIDX"
-    }
-    
+    # 🟢 DIRECT HTTP INTERCEPT FOR NIFTY SPOT (INDEX)
     try:
-        idx_resp = dhan.ohlc_data(securities=index_payload)
-        if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
-            st.success("🟢 Dhan Index API successful: 200 OK")
-            master_data["NSE_INDEX"] = idx_resp.get("data", {})
-        else:
-            remark = idx_resp.get("remarks") if isinstance(idx_resp, dict) else idx_resp
-            st.error(f"🔴 Dhan Index API Status: 400 | {remark}")
-    except Exception as e:
-        st.error(f"🔴 Dhan Index API Crash: 500 | {e}")
+        spot_payload = {
+            "ExchangeSegment": "IDX_I",
+            "SecurityId": "13",
+            "InstrumentType": "INDEX"
+        }
+        spot_url = "https://api.dhan.co/v2/marketfeed/ohlc"
+        spot_resp = requests.post(spot_url, json=spot_payload, headers=headers, timeout=5)
         
-    try:
-        fno_resp = dhan.quote_data(securities=fno_payload)
-        if isinstance(fno_resp, dict) and fno_resp.get("status") == "success":
-            st.success("🟢 Dhan FNO API successful: 200 OK")
-            master_data["NSE_FNO"] = fno_resp.get("data", {})
+        if spot_resp.status_code == 200:
+            res_data = spot_resp.json()
+            if res_data.get("status") == "success":
+                st.success("🟢 Spot API Connection (Direct HTTP): 200 OK")
+                # Pull directly from flat structure returned via standard JSON endpoints
+                master_data["NIFTY_SPOT"] = float(res_data.get("data", {}).get("lastPrice", 0.0))
+            else:
+                st.error(f"🔴 Spot API internal rejection: {res_data.get('remarks')}")
         else:
-            remark = fno_resp.get("remarks") if isinstance(fno_resp, dict) else fno_resp
-            st.error(f"🔴 Dhan FNO API Status: 400 | {remark}")
+            st.error(f"🔴 Spot HTTP Endpoint failure: Status {spot_resp.status_code}")
     except Exception as e:
-        st.error(f"🔴 Dhan FNO API Crash: 500 | {e}")
+        st.error(f"🔴 Spot Connection crash: {e}")
+
+    # 🟢 DIRECT HTTP INTERCEPT FOR NIFTY FUTURES
+    try:
+        # Requesting Nifty Futures Contract
+        fut_payload = {
+            "ExchangeSegment": "NSE_FNO",
+            "SecurityId": "14366",  
+            "InstrumentType": "FUTIDX"
+        }
+        fut_url = "https://api.dhan.co/v2/marketfeed/quote"
+        fut_resp = requests.post(fut_url, json=fut_payload, headers=headers, timeout=5)
+        
+        if fut_resp.status_code == 200:
+            res_data = fut_resp.json()
+            if res_data.get("status") == "success":
+                st.success("🟢 F&O API Connection (Direct HTTP): 200 OK")
+                master_data["NIFTY_FUTURE"] = float(res_data.get("data", {}).get("lastPrice", 0.0))
+            else:
+                st.error(f"🔴 F&O API internal rejection: {res_data.get('remarks')}")
+        else:
+            st.error(f"🔴 F&O HTTP Endpoint failure: Status {fut_resp.status_code}")
+    except Exception as e:
+        st.error(f"🔴 F&O Connection crash: {e}")
         
     return master_data
 
@@ -169,13 +187,10 @@ positions_df = fetch_positions()
 working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
-# 5. Pure Real-Time Market Metric Extraction (Safe Traversal)
+# 5. Pure Real-Time Market Metric Extraction (Direct Assignment)
 # ----------------------------------------------------
-nifty_spot = market_data.get("NSE_INDEX", {}).get("lastPrice", 0.0)
-if nifty_spot == 0.0:
-    nifty_spot = market_data.get("NSE_INDEX", {}).get("ohlc", {}).get("last_price", 0.0)
-
-nifty_fut = market_data.get("NSE_FNO", {}).get("lastPrice", 0.0)
+nifty_spot = market_data["NIFTY_SPOT"]
+nifty_fut = market_data["NIFTY_FUTURE"]
 vix = 0.0  
 
 if nifty_spot > 0:
