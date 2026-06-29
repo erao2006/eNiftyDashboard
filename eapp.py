@@ -192,7 +192,7 @@ NIFTY50_SYMBOLS = [
 def load_security_ids():
     url = "https://images.dhan.co/api-data/api-scrip-master-detailed.csv"
     response = requests.get(url)
-    df = pd.read_csv(io.StringIO(response.text))
+    df = pd.read_csv(io.StringIO(response.text), low_memory=False)
     # Filter for NSE Equity
     df = df[(df["EXCH_ID"] == "NSE") & (df["SEGMENT"] == "E")]
     mapping = {}
