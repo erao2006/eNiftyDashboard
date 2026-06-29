@@ -34,46 +34,43 @@ except Exception as init_err:
 # ----------------------------------------------------
 # 3. Direct Trading API Engine (Bypassing Paid Data Sub)
 # ----------------------------------------------------
-@st.cache_data(ttl=1)  
+@st.cache_data(ttl=2)  
 def fetch_market_snapshot():
     master_data = {"NIFTY_SPOT": 0.0, "NIFTY_FUTURE": 0.0}
     
-    # Correct Official Core HTTP Header Keys
     headers = {
         "access-token": ACCESS_TOKEN,
         "client-id": CLIENT_ID,
         "Content-Type": "application/json"
     }
     
-    # 1. Fetch Nifty 50 Spot via Free Quote URL
+    # 1. Fetch Nifty 50 Spot
     try:
         spot_payload = {
             "ExchangeSegment": "IDX_I",
             "SecurityId": "13",
             "InstrumentType": "INDEX"
         }
-        # Using free endpoint path
         url = "https://api.dhan.co/v2/marketfeed/quote"
         resp = requests.post(url, json=spot_payload, headers=headers, timeout=5)
         
         if resp.status_code == 200:
             res_json = resp.json()
             if res_json.get("status") == "success":
-                st.success("🟢 Nifty Spot API (Quote Engine): 200 OK")
+                st.success("🟢 Nifty Spot API: 200 OK")
                 master_data["NIFTY_SPOT"] = float(res_json.get("data", {}).get("lastPrice", 0.0))
             else:
-                st.error(f"🔴 Spot internal refusal: {res_json.get('remarks')}")
+                st.error(f"🔴 Spot Internal Refusal: {res_json.get('remarks')}")
         else:
             st.error(f"🔴 Spot Gateway HTTP code: {resp.status_code}")
     except Exception as e:
         st.error(f"🔴 Spot Connection failed: {e}")
 
-    # 2. Fetch Nifty Futures via Free Quote URL
+    # 2. Fetch Nifty Futures
     try:
-        # 14366 is standard master underlying token ID for continuous contracts
         fut_payload = {
             "ExchangeSegment": "NSE_FNO",
-            "SecurityId": "14366",  
+            "SecurityId": "52175",  
             "InstrumentType": "FUTIDX"
         }
         url = "https://api.dhan.co/v2/marketfeed/quote"
@@ -82,20 +79,10 @@ def fetch_market_snapshot():
         if resp.status_code == 200:
             res_json = resp.json()
             if res_json.get("status") == "success":
-                st.success("🟢 Nifty Future API (Quote Engine): 200 OK")
+                st.success("🟢 Nifty Future API: 200 OK")
                 master_data["NIFTY_FUTURE"] = float(res_json.get("data", {}).get("lastPrice", 0.0))
             else:
-                # If 14366 fails on custom instruments, fall back to explicit current active expiry sequence token
-                try:
-                    alt_payload = {"ExchangeSegment": "NSE_FNO", "SecurityId": "52175", "InstrumentType": "FUTIDX"}
-                    alt_resp = requests.post(url, json=alt_payload, headers=headers, timeout=5)
-                    if alt_resp.status_code == 200 and alt_resp.json().get("status") == "success":
-                        master_data["NIFTY_FUTURE"] = float(alt_resp.json().get("data", {}).get("lastPrice", 0.0))
-                        st.success("🟢 Nifty Future API (Backup Token Match): 200 OK")
-                    else:
-                        st.error(f"🔴 F&O Core Refusal: {res_json.get('remarks')}")
-                except Exception:
-                    st.error(f"🔴 F&O primary refusal: {res_json.get('remarks')}")
+                st.error(f"🔴 F&O Core Refusal: {res_json.get('remarks')}")
         else:
             st.error(f"🔴 F&O Gateway HTTP code: {resp.status_code}")
     except Exception as e:
@@ -140,29 +127,14 @@ def fetch_positions():
         st.error(f"🔴 Dhan Positions API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
-# ----------------------------------------------------
-# 4. Fallback Past Market Settlement Data
-# ----------------------------------------------------
-@st.cache_data(ttl=1800)
-def fetch_last_working_day_data():
-    fallback_date = datetime.date.today() - datetime.timedelta(days=1)
-    return {
-        "working_date": fallback_date.strftime("%d-%b-%Y"),
-        "close_price": 0.00,
-        "adv": 0,
-        "dec": 0,
-        "status": "Trading Credentials Connected | Data API Segments Restrained"
-    }
-
 # Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
 market_data = fetch_market_snapshot()
 orders_df = fetch_orders()
 positions_df = fetch_positions()
-working_day_data = fetch_last_working_day_data()
 
 # ----------------------------------------------------
-# 5. Market Metric Assignment
+# 4. Market Metric Assignment
 # ----------------------------------------------------
 nifty_spot = market_data["NIFTY_SPOT"]
 nifty_fut = market_data["NIFTY_FUTURE"]
@@ -181,7 +153,7 @@ advances, declines = 0, 0
 breadth = "NEUTRAL"
 
 # ----------------------------------------------------
-# 6. UI Custom CSS & Theme Injection
+# 5. UI Custom CSS & Theme Injection
 # ----------------------------------------------------
 st.markdown(
     """
@@ -225,7 +197,7 @@ st.markdown(
 st.markdown("---")
 
 # ----------------------------------------------------
-# 7. Live Market Terminal Block
+# 6. Live Market Terminal Block
 # ----------------------------------------------------
 st.markdown("### 📊 Live Terminal Snapshot")
 terminal_html = f"""
@@ -286,7 +258,7 @@ terminal_html = f"""
 st.markdown(terminal_html, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 8. Portfolio P&L Summary Banner
+# 7. Portfolio P&L Summary Banner
 # ----------------------------------------------------
 st.markdown("### 📈 Cumulative Performance P&L")
 if not positions_df.empty:
@@ -302,7 +274,7 @@ else:
     st.markdown('<div class="pnl-box" style="background-color: #1E1E1E; color: #E0E0E0; border: 1px solid #333333;">TOTAL P&L: ₹0.00</div>', unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 9. Positions & Orders Ledger Displays
+# 8. Positions & Orders Ledger Displays
 # ----------------------------------------------------
 st.markdown("### 💼 Open Positions Details")
 if not positions_df.empty:
@@ -315,36 +287,6 @@ if not orders_df.empty:
     st.dataframe(orders_df, width='stretch', hide_index=True)
 else:
     st.info("No orders processed today.")
-
-# ----------------------------------------------------
-# 10. Isolated Past Market Settlement Block
-# ----------------------------------------------------
-st.markdown("### 🏛️ Past Fixed Settlement Snapshot")
-fixed_thursday_html = f"""
-<div class="terminal-box" style="border-top: 3px solid #F1C40F;">
-    <div class="terminal-row">
-        <span class="label">LAST WORKING DATE</span>
-        <span class="value-neutral">{working_day_data["working_date"]}</span>
-    </div>
-    <div class="terminal-row">
-        <span class="label">NIFTY CLOSE</span>
-        <span class="value">{working_day_data["close_price"]:,.2f}</span>
-    </div>
-    <div class="terminal-row">
-        <span class="label">ADVANCES</span>
-        <span class="value" style="color: #00FF66;">{working_day_data["adv"]}</span>
-    </div>
-    <div class="terminal-row">
-        <span class="label">DECLINES</span>
-        <span class="value" style="color: #FF4D4D;">{working_day_data["dec"]}</span>
-    </div>
-    <div class="terminal-row">
-        <span class="label">ENGINE LOG</span>
-        <span class="value" style="color: #888888; font-size: 0.9em;">{working_day_data["status"]}</span>
-    </div>
-</div>
-"""
-st.markdown(fixed_thursday_html, unsafe_allow_html=True)
 
 # Sync Footer
 ist_zone = ZoneInfo("Asia/Kolkata")
