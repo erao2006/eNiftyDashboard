@@ -174,7 +174,7 @@ def get_nifty50_ad():
 
 NIFTY50_SYMBOLS = [
     "ADANIENT", "ADANIPORTS", "APOLLOHOSP", "ASIANPAINT", "AXISBANK",
-    "BAJAJ-AUTO", "BAJAJFINSV", "BAJFINANCE", "BEL", "BHARTIARTL",
+    "BAJAJ-AUTO", "BAJFINANCE", "BAJAJFINSV", "BEL", "BHARTIARTL",
     "CIPLA", "COALINDIA", "DRREDDY", "EICHERMOT", "GRASIM",
     "HCLTECH", "HDFCBANK", "HDFCLIFE", "HEROMOTOCO", "HINDALCO",
     "HINDUNILVR", "ICICIBANK", "INDUSINDBK", "INFY", "ITC",
@@ -184,15 +184,25 @@ NIFTY50_SYMBOLS = [
     "TATACONSUM", "TATAMOTORS", "TATASTEEL", "TCS", "TECHM",
     "TITAN", "TRENT", "ULTRACEMCO", "WIPRO"
 ]
+
+# Authentication
+try:
+    CLIENT_ID = st.secrets["DHAN_CLIENT_ID"]
+    ACCESS_TOKEN = st.secrets["DHAN_ACCESS_TOKEN"]
+    dhan = dhanhq(CLIENT_ID, ACCESS_TOKEN)
+except Exception as e:
+    st.error(f"🔴 Auth Error: {e}")
+    st.stop()
+
 # ----------------------------------------------------
-# 3. Data Engine Functions
+# 2. Data Engine
 # ----------------------------------------------------
 @st.cache_data(ttl=86400)
 def load_security_ids():
-    """Maps Nifty 50 symbols to Dhan Security IDs."""
     url = "https://images.dhan.co/api-data/api-scrip-master-detailed.csv"
     response = requests.get(url)
     df = pd.read_csv(io.StringIO(response.text))
+    # Filter for NSE Equity
     df = df[(df["EXCH_ID"] == "NSE") & (df["SEGMENT"] == "E")]
     mapping = {}
     for sym in NIFTY50_SYMBOLS:
@@ -201,45 +211,42 @@ def load_security_ids():
             mapping[sym] = str(row.iloc[0]["SECURITY_ID"])
     return mapping
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=5)
 def get_dhan_breadth():
     mapping = load_security_ids()
     try:
-        # Fetching live data for all securities
-        res = dhan.ohlc_data(securities={"NSE_EQ": list(mapping.values())})
-        if res.get("status") == "success":
+        quotes = dhan.ohlc_data(securities={"NSE_EQ": list(mapping.values())})
+        if quotes.get("status") == "success":
+            data = quotes["data"]["NSE_EQ"]
             adv = dec = unc = 0
-            for sec_id, data in res["data"]["NSE_EQ"].items():
-                ltp = data["last_price"]
-                prev = data["ohlc"]["close"]
+            for sec_id in data:
+                ltp = data[sec_id]["last_price"]
+                prev = data[sec_id]["ohlc"]["close"]
                 if ltp > prev: adv += 1
                 elif ltp < prev: dec += 1
                 else: unc += 1
             return adv, dec, unc
-    except Exception as e:
-        logging.error(f"Breadth error: {e}")
+    except: pass
     return 0, 0, 50
 
 # ----------------------------------------------------
-# 4. Main UI Logic
+# 3. Main Dashboard UI
 # ----------------------------------------------------
-st.title("📊 Market Terminal")
+st.title("📊 Live Market Terminal")
 
 # Fetch Data
 adv, dec, unc = get_dhan_breadth()
-ratio = round(adv/dec, 2) if dec > 0 else float(adv)
 
-# Display Metrics
+# Metrics
+st.markdown("### 📈 NIFTY 50 Advance / Decline")
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("🟢 Advance", adv)
-c2.metric("🔴 Decline", dec)
-c3.metric("⚪ Unchanged", unc)
-c4.metric("📊 A/D Ratio", ratio)
+c1.metric("🟢 Adv", adv)
+c2.metric("🔴 Dec", dec)
+c3.metric("⚪ Unch", unc)
+c4.metric("📊 Ratio", round(adv/dec, 2) if dec > 0 else adv)
 
-# Remaining UI (CSS, Terminal, Portfolio)
-# [Paste your existing UI/CSS/Portfolio P&L blocks here]
-
-st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
+# P&L and other logic (Keep your original CSS and dataframe blocks below)
+st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
 
 # ---- test ends ----
 
