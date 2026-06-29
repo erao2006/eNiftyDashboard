@@ -6,6 +6,26 @@ from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
 
+# -------
+# new section
+# --------
+NIFTY50_SYMBOLS = [
+    "ADANIENT.NS", "ADANIPORTS.NS", "APOLLOHOSP.NS", "ASIANPAINT.NS",
+    "AXISBANK.NS", "BAJAJ-AUTO.NS", "BAJFINANCE.NS", "BAJAJFINSV.NS",
+    "BEL.NS", "BHARTIARTL.NS", "CIPLA.NS", "COALINDIA.NS",
+    "DRREDDY.NS", "EICHERMOT.NS", "ETERNAL.NS", "GRASIM.NS",
+    "HCLTECH.NS", "HDFCBANK.NS", "HDFCLIFE.NS", "HEROMOTOCO.NS",
+    "HINDALCO.NS", "HINDUNILVR.NS", "ICICIBANK.NS", "ITC.NS",
+    "INDUSINDBK.NS", "INFY.NS", "JSWSTEEL.NS", "JIOFIN.NS",
+    "KOTAKBANK.NS", "LT.NS", "M&M.NS", "MARUTI.NS",
+    "NESTLEIND.NS", "NTPC.NS", "ONGC.NS", "POWERGRID.NS",
+    "RELIANCE.NS", "SBILIFE.NS", "SHRIRAMFIN.NS", "SBIN.NS",
+    "SUNPHARMA.NS", "TCS.NS", "TATACONSUM.NS", "TATAMOTORS.NS",
+    "TATASTEEL.NS", "TECHM.NS", "TITAN.NS", "TRENT.NS",
+    "ULTRACEMCO.NS", "WIPRO.NS"
+]
+
+
 # ----------------------------------------------------
 # 1. Global Page Configuration
 # ----------------------------------------------------
@@ -115,6 +135,40 @@ def fetch_positions():
     except Exception as e:
         st.error(f"🔴 Dhan Positions API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
+
+# new section
+def get_nifty50_ad():
+    try:
+        data = yf.download(
+            NIFTY50_SYMBOLS,
+            period="2d",
+            interval="1d",
+            progress=False,
+            auto_adjust=False,
+            threads=True
+        )
+
+        closes = data["Close"]
+
+        if len(closes) < 2:
+            return 0, 0, 50, 0.0
+
+        prev_close = closes.iloc[-2]
+        curr_close = closes.iloc[-1]
+
+        advances = (curr_close > prev_close).sum()
+        declines = (curr_close < prev_close).sum()
+        unchanged = (curr_close == prev_close).sum()
+
+        ratio = round(advances / declines, 2) if declines > 0 else float(advances)
+
+        return int(advances), int(declines), int(unchanged), ratio
+
+    except Exception as e:
+        st.error(f"A/D Error: {e}")
+        return 0, 0, 50, 0.0
+
+# -------
 
 # Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
@@ -286,6 +340,22 @@ if not orders_df.empty:
     st.dataframe(orders_df, width='stretch', hide_index=True)
 else:
     st.info("No orders processed today.")
+
+# ------- new section
+# -------- NIFTY 50 ADVANCE / DECLINE --------
+adv, dec, unc, ad_ratio = get_nifty50_ad()
+
+st.markdown("### 📈 NIFTY 50 Advance / Decline")
+
+c1, c2, c3, c4 = st.columns(4)
+
+c1.metric("🟢 Advance", adv)
+c2.metric("🔴 Decline", dec)
+c3.metric("⚪ Unchanged", unc)
+c4.metric("📊 A/D Ratio", ad_ratio)
+
+st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
+# ------
 
 # Sync Footer
 ist_zone = ZoneInfo("Asia/Kolkata")
