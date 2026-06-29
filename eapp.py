@@ -2,10 +2,11 @@ import datetime
 import pandas as pd
 import streamlit as st
 import yfinance as yf
+import requests
+import io
 from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
-
 # -------
 # new section
 # --------
@@ -172,61 +173,74 @@ def get_nifty50_ad():
 # ---- test to display nifty 50 security values
 
 NIFTY50_SYMBOLS = [
-    "ADANIENT","ADANIPORTS","APOLLOHOSP","ASIANPAINT","AXISBANK",
-    "BAJAJ-AUTO","BAJAJFINSV","BAJFINANCE","BEL","BHARTIARTL",
-    "CIPLA","COALINDIA","DRREDDY","EICHERMOT","ETERNAL",
-    "GRASIM","HCLTECH","HDFCBANK","HDFCLIFE","HEROMOTOCO",
-    "HINDALCO","HINDUNILVR","ICICIBANK","INDUSINDBK","INFY",
-    "ITC","JIOFIN","JSWSTEEL","KOTAKBANK","LT",
-    "M&M","MARUTI","NESTLEIND","NTPC","ONGC",
-    "POWERGRID","RELIANCE","SBILIFE","SBIN","SHRIRAMFIN",
-    "SUNPHARMA","TATACONSUM","TATAMOTORS","TATASTEEL","TCS",
-    "TECHM","TITAN","TRENT","ULTRACEMCO","WIPRO"
-]
-
+    "ADANIENT", "ADANIPORTS", "APOLLOHOSP", "ASIANPAINT", "AXISBANK",
+    "BAJAJ-AUTO", "BAJAJFINSV", "BAJFINANCE", "BEL", "BHARTIARTL",
+    "CIPLA", "COALINDIA", "DRREDDY", "EICHERMOT", "GRASIM",
+    "HCLTECH", "HDFCBANK", "HDFCLIFE", "HEROMOTOCO", "HINDALCO",
+    "HINDUNILVR", "ICICIBANK", "INDUSINDBK", "INFY", "ITC",
+    "JIOFIN", "JSWSTEEL", "KOTAKBANK", "LT", "M&M",
+    "MARUTI", "NESTLEIND", "NTPC", "ONGC", "POWERGRID",
+    "RELIANCE", "SBILIFE", "SBIN", "SHRIRAMFIN", "SUNPHARMA",
+    "TATACONSUM", "TATAMOTORS", "TATASTEEL", "TCS", "TECHM",
+    "TITAN", "TRENT", "ULTRACEMCO"
+    ]
+# ----------------------------------------------------
+# 3. Data Engine Functions
+# ----------------------------------------------------
 @st.cache_data(ttl=86400)
 def load_security_ids():
-    url = "https://images.dhan.co/api-data/api-scrip-master.csv"
-    df = pd.read_csv(url)
-    df = df[df["SEM_SEGMENT"] == "NSE_EQ"]
+    """Maps Nifty 50 symbols to Dhan Security IDs."""
+    url = "https://images.dhan.co/api-data/api-scrip-master-detailed.csv"
+    response = requests.get(url)
+    df = pd.read_csv(io.StringIO(response.text))
+    df = df[(df["EXCH_ID"] == "NSE") & (df["SEGMENT"] == "E")]
     mapping = {}
-
     for sym in NIFTY50_SYMBOLS:
-        row = df[df["SEM_TRADING_SYMBOL"] == sym]
+        row = df[df["SYMBOL_NAME"] == sym]
         if not row.empty:
-            mapping[sym] = int(row.iloc[0]["SECURITY_ID"])
+            mapping[sym] = str(row.iloc[0]["SECURITY_ID"])
     return mapping
 
-NIFTY50_SECURITIES = load_security_ids()
+@st.cache_data(ttl=60)
+def get_dhan_breadth():
+    mapping = load_security_ids()
+    try:
+        # Fetching live data for all securities
+        res = dhan.ohlc_data(securities={"NSE_EQ": list(mapping.values())})
+        if res.get("status") == "success":
+            adv = dec = unc = 0
+            for sec_id, data in res["data"]["NSE_EQ"].items():
+                ltp = data["last_price"]
+                prev = data["ohlc"]["close"]
+                if ltp > prev: adv += 1
+                elif ltp < prev: dec += 1
+                else: unc += 1
+            return adv, dec, unc
+    except Exception as e:
+        logging.error(f"Breadth error: {e}")
+    return 0, 0, 50
 
-security_list = {
-    "NSE_EQ": list(NIFTY50_SECURITIES.values())
-}
+# ----------------------------------------------------
+# 4. Main UI Logic
+# ----------------------------------------------------
+st.title("📊 Market Terminal")
 
-# quotes = market_feed.ohlc_data(security_list)
-quotes = dhan.ohlc_data(
-    securities={
-        "NSE_EQ": list(NIFTY50_SECURITIES.values())
-    }
-)
+# Fetch Data
+adv, dec, unc = get_dhan_breadth()
+ratio = round(adv/dec, 2) if dec > 0 else float(adv)
 
-print(type(quotes))
-print(quotes)
+# Display Metrics
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("🟢 Advance", adv)
+c2.metric("🔴 Decline", dec)
+c3.metric("⚪ Unchanged", unc)
+c4.metric("📊 A/D Ratio", ratio)
 
-advance = decline = unchanged = 0
+# Remaining UI (CSS, Terminal, Portfolio)
+# [Paste your existing UI/CSS/Portfolio P&L blocks here]
 
-for stock in quotes["data"]["NSE_EQ"].values():
-    ltp = stock["last_price"]
-    prev = stock["ohlc"]["close"]
+st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
 
-    if ltp > prev:
-        advance += 1
-    elif ltp < prev:
-        decline += 1
-    else:
-        unchanged += 1
-
-st.success("NSE security list:: ",{advance})
 # ---- test ends ----
 
 # Execute Network Engine Operations
