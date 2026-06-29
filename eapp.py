@@ -203,7 +203,12 @@ security_list = {
     "NSE_EQ": list(NIFTY50_SECURITIES.values())
 }
 
-quotes = market_feed.ohlc_data(security_list)
+# quotes = market_feed.ohlc_data(security_list)
+quotes = dhan.ohlc_data(
+    securities={
+        "NSE_EQ": list(NIFTY50_SECURITIES.values())
+    }
+)
 
 advance = decline = unchanged = 0
 
