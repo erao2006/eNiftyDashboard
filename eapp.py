@@ -1,6 +1,7 @@
 import datetime
 import pandas as pd
 import streamlit as st
+import requests
 from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
@@ -23,65 +24,56 @@ except Exception:
     CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
     ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
 
-# Cache the connection engine context globally to prevent 429 token generation overhead
-@st.cache_resource
-def get_dhan_connection(client_id, token):
-    try:
-        ctx = DhanContext(client_id=client_id, access_token=token)
-        return dhanhq(ctx)
-    except Exception as e:
-        st.error(f"🔴 Connection Context Failure: {e}")
-        return None
-
-dhan = get_dhan_connection(CLIENT_ID, ACCESS_TOKEN)
-
-if not dhan:
-    st.error("🔴 System Configuration Error | Initialization Failed")
+try:
+    dhan_context = DhanContext(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
+    dhan = dhanhq(dhan_context)
+except Exception as init_err:
+    st.error(f"🔴 System Configuration Error | Initialization Failed: {init_err}")
     st.stop()
 
 # ----------------------------------------------------
-# 3. Direct Native SDK Engine (Bypassing Raw requests.post Calls)
+# 3. Streamlined Core API Live Ticker Engine
 # ----------------------------------------------------
-@st.cache_data(ttl=5)  # Restrict cache to 5 seconds to permanently prevent 429 rate limit triggers
+@st.cache_data(ttl=3)  # Balanced cache window to drop 429 rate limitation flags completely
 def fetch_market_snapshot():
     master_data = {"NIFTY_SPOT": 0.0, "NIFTY_FUTURE": 0.0}
     
-    # Using the native SDK structure enforces proper formatting automatically
-    try:
-        # Request body parameters format using internal SDK components
-        spot_payload = {
-            "data": {
-                "IDX_I": ["13"]  # Nifty 50 Spot
-            }
+    # Strictly lowercased key structure required by the Market HTTP gateway
+    headers = {
+        "access-token": str(ACCESS_TOKEN),
+        "client-id": str(CLIENT_ID),
+        "Content-Type": "application/json"
+    }
+    
+    # Combined single ticker packet payload to minimize separate API connections
+    ticker_payload = {
+        "data": {
+            "IDX_I": ["13"],      # Nifty 50 Spot Index ID
+            "NSE_FNO": ["52175"]  # Active Nifty Derivative Future ID
         }
-        # Native library call automatically inherits valid credentials securely
-        response = dhan.get_ltpData(spot_payload)
-        if isinstance(response, dict) and response.get("status") == "success":
-            st.success("🟢 Nifty Spot API: 200 OK")
-            # Extract out the correct underlying sequence map
-            data_map = response.get("data", {}).get("IDX_I", {})
-            master_data["NIFTY_SPOT"] = float(data_map.get("13", {}).get("last_price", 0.0))
-        else:
-            # Fallback explicitly if SDK map fails due to active data add-on requirement
-            st.warning("⚠️ Native Spot Data Stream Restrained. Using internal tracking placeholder.")
-    except Exception as e:
-        st.error(f"🔴 Spot Connection failed: {e}")
-
+    }
+    
     try:
-        fut_payload = {
-            "data": {
-                "NSE_FNO": ["52175"]  # Active Nifty Future Token
-            }
-        }
-        response = dhan.get_ltpData(fut_payload)
-        if isinstance(response, dict) and response.get("status") == "success":
-            st.success("🟢 Nifty Future API: 200 OK")
-            data_map = response.get("data", {}).get("NSE_FNO", {})
-            master_data["NIFTY_FUTURE"] = float(data_map.get("52175", {}).get("last_price", 0.0))
+        url = "https://api.dhan.co/v2/marketfeed/ltp"
+        resp = requests.post(url, json=ticker_payload, headers=headers, timeout=5)
+        
+        if resp.status_code == 200:
+            res_json = resp.json()
+            if res_json.get("status") == "success":
+                st.success("🟢 Market Feed Ticker API: 200 OK")
+                data_map = res_json.get("data", {})
+                
+                # Dynamic parsing out of map segments safely
+                master_data["NIFTY_SPOT"] = float(data_map.get("IDX_I", {}).get("13", {}).get("last_price", 0.0))
+                master_data["NIFTY_FUTURE"] = float(data_map.get("NSE_FNO", {}).get("52175", {}).get("last_price", 0.0))
+            else:
+                st.error(f"🔴 Ticker Feed Refusal: {res_json.get('remarks')}")
+        elif resp.status_code == 429:
+            st.error("🔴 Gateway Error 429: Dhan rate limit exceeded. Pausing incoming script executions.")
         else:
-            st.warning("⚠️ Native F&O Data Stream Restrained. Using internal tracking placeholder.")
+            st.error(f"🔴 Market Gateway Connection Code: {resp.status_code}")
     except Exception as e:
-        st.error(f"🔴 F&O Connection failed: {e}")
+        st.error(f"🔴 Market Connection failed: {e}")
         
     return master_data
 
@@ -96,7 +88,7 @@ def fetch_orders():
             available_cols = [col for col in columns_to_keep if col in df.columns]
             return df[available_cols]
         else:
-            remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized / Expired Session"
+            remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized Session"
             st.error(f"🔴 Dhan Orders API Failed: {remark}")
     except Exception as e:
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
@@ -116,7 +108,7 @@ def fetch_positions():
             available_cols = [col for col in columns_to_keep if col in df.columns]
             return df[available_cols]
         else:
-            remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized / Expired Session"
+            remark = response.get("remarks") if isinstance(response, dict) else "Unauthorized Session"
             st.error(f"🔴 Dhan Positions API Failed: {remark}")
     except Exception as e:
         st.error(f"🔴 Dhan Positions API Failed: 500 Connection Error | {e}")
