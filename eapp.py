@@ -169,6 +169,37 @@ def get_nifty50_ad():
         return 0, 0, 50, 0.0
 
 # -------
+# ---- test to display nifty 50 security values
+
+# Downloaded from Dhan
+df = pd.read_csv("api-scrip-master.csv")
+
+# Keep only NSE Equity
+df = df[df["SEM_SEGMENT"] == "NSE_EQ"]
+
+# Nifty 50 symbols
+NIFTY50 = [
+    "ADANIENT","ADANIPORTS","APOLLOHOSP","ASIANPAINT","AXISBANK",
+    "BAJAJ-AUTO","BAJFINANCE","BAJAJFINSV","BEL","BHARTIARTL",
+    "CIPLA","COALINDIA","DRREDDY","EICHERMOT","ETERNAL",
+    "GRASIM","HCLTECH","HDFCBANK","HDFCLIFE","HEROMOTOCO",
+    "HINDALCO","HINDUNILVR","ICICIBANK","INDUSINDBK","INFY",
+    "ITC","JIOFIN","JSWSTEEL","KOTAKBANK","LT",
+    "M&M","MARUTI","NESTLEIND","NTPC","ONGC",
+    "POWERGRID","RELIANCE","SBILIFE","SHRIRAMFIN","SBIN",
+    "SUNPHARMA","TATACONSUM","TATAMOTORS","TATASTEEL","TCS",
+    "TECHM","TITAN","TRENT","ULTRACEMCO","WIPRO"
+]
+
+mapping = {}
+
+for sym in NIFTY50:
+    row = df[df["SEM_TRADING_SYMBOL"] == sym]
+    if not row.empty:
+        mapping[sym] = int(row.iloc[0]["SECURITY_ID"])
+
+st.success("NSE security list:: ",{mapping})
+# ---- test ends ----
 
 # Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
