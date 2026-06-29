@@ -1,7 +1,6 @@
 import datetime
 import pandas as pd
 import streamlit as st
-import requests
 from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
@@ -32,46 +31,31 @@ except Exception as init_err:
     st.stop()
 
 # ----------------------------------------------------
-# 3. Streamlined Core API Live Ticker Engine
+# 3. Direct Native SDK Engine (Handles Headers Internally)
 # ----------------------------------------------------
-@st.cache_data(ttl=3)  # Balanced cache window to drop 429 rate limitation flags completely
+@st.cache_data(ttl=5)  # Keeps a 5-second cache window to guarantee no 429 rate limit resets
 def fetch_market_snapshot():
     master_data = {"NIFTY_SPOT": 0.0, "NIFTY_FUTURE": 0.0}
     
-    # Strictly lowercased key structure required by the Market HTTP gateway
-    headers = {
-        "access-token": str(ACCESS_TOKEN),
-        "client-id": str(CLIENT_ID),
-        "Content-Type": "application/json"
-    }
-    
-    # Combined single ticker packet payload to minimize separate API connections
-    ticker_payload = {
-        "data": {
-            "IDX_I": ["13"],      # Nifty 50 Spot Index ID
-            "NSE_FNO": ["52175"]  # Active Nifty Derivative Future ID
-        }
-    }
-    
     try:
-        url = "https://api.dhan.co/v2/marketfeed/ltp"
-        resp = requests.post(url, json=ticker_payload, headers=headers, timeout=5)
+        # Define target instruments as list of tuples: [(ExchangeSegment, SecurityId)]
+        # This native format forces the SDK to structure headers correctly
+        instruments = [
+            ("IDX_I", "13"),      # Nifty 50 Spot
+            ("NSE_FNO", "52175")  # Active Nifty Future Contract ID
+        ]
         
-        if resp.status_code == 200:
-            res_json = resp.json()
-            if res_json.get("status") == "success":
-                st.success("🟢 Market Feed Ticker API: 200 OK")
-                data_map = res_json.get("data", {})
-                
-                # Dynamic parsing out of map segments safely
-                master_data["NIFTY_SPOT"] = float(data_map.get("IDX_I", {}).get("13", {}).get("last_price", 0.0))
-                master_data["NIFTY_FUTURE"] = float(data_map.get("NSE_FNO", {}).get("52175", {}).get("last_price", 0.0))
-            else:
-                st.error(f"🔴 Ticker Feed Refusal: {res_json.get('remarks')}")
-        elif resp.status_code == 429:
-            st.error("🔴 Gateway Error 429: Dhan rate limit exceeded. Pausing incoming script executions.")
+        response = dhan.get_ltp(instruments)
+        
+        if isinstance(response, dict) and response.get("status") == "success":
+            st.success("🟢 Market Feed Ticker API: 200 OK")
+            data_map = response.get("data", {})
+            
+            # Extract data using the native library's index string format
+            master_data["NIFTY_SPOT"] = float(data_map.get("IDX_I:13", {}).get("last_price", 0.0))
+            master_data["NIFTY_FUTURE"] = float(data_map.get("NSE_FNO:52175", {}).get("last_price", 0.0))
         else:
-            st.error(f"🔴 Market Gateway Connection Code: {resp.status_code}")
+            st.error(f"🔴 Ticker Feed Refusal: {response.get('remarks') if isinstance(response, dict) else 'Invalid response format'}")
     except Exception as e:
         st.error(f"🔴 Market Connection failed: {e}")
         
@@ -248,9 +232,9 @@ st.markdown(terminal_html, unsafe_allow_html=True)
 # 7. Portfolio P&L Summary Banner
 # ----------------------------------------------------
 st.markdown("### 📈 Cumulative Performance P&L")
-if not positions_df.empty:
-    realized = pd.to_numeric(positions_df['realizedProfit'], errors='coerce').fillna(0.0).sum()
-    unrealized = pd.to_numeric(positions_df['unrealizedProfit'], errors='coerce').fillna(0.0).sum()
+if not orders_df.empty or not positions_df.empty:
+    realized = pd.to_numeric(positions_df['realizedProfit'], errors='coerce').fillna(0.0).sum() if not positions_df.empty else 0.0
+    unrealized = pd.to_numeric(positions_df['unrealizedProfit'], errors='coerce').fillna(0.0).sum() if not positions_df.empty else 0.0
     total_pnl = realized + unrealized
     
     if total_pnl >= 0:
