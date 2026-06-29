@@ -35,7 +35,6 @@ except Exception as init_err:
 # ----------------------------------------------------
 @st.cache_data(ttl=1)  
 def fetch_market_snapshot():
-    # FIXED: Using correct structural dictionary keys ("IDX_I" instead of "NSE_INDEX")
     master_data = {"NSE_INDEX": {}, "NSE_FNO": {}}
     index_payload = {"IDX_I": [13]}
     fno_payload = {"NSE_FNO": [40001, 35002]}
@@ -44,7 +43,6 @@ def fetch_market_snapshot():
         idx_resp = dhan.ohlc_data(securities=index_payload)
         if isinstance(idx_resp, dict) and idx_resp.get("status") == "success":
             st.success("🟢 Dhan Index API successful: 200 OK")
-            # Mapped back to your master_data structure using the incoming "IDX_I" object
             master_data["NSE_INDEX"] = idx_resp.get("data", {}).get("IDX_I", {})
         else:
             remark = idx_resp.get("remarks") if isinstance(idx_resp, dict) else "Market Closed / Feed Locked"
@@ -310,13 +308,15 @@ else:
 # ----------------------------------------------------
 st.markdown("### 💼 Open Positions Details")
 if not positions_df.empty:
-    st.dataframe(positions_df, use_container_width=True, hide_index=True)
+    # FIXED: Updated use_container_width=True to width='stretch'
+    st.dataframe(positions_df, width='stretch', hide_index=True)
 else:
     st.info("No active open positions found.")
 
 st.markdown("### 📦 Today's Order Book")
 if not orders_df.empty:
-    st.dataframe(orders_df, use_container_width=True, hide_index=True)
+    # FIXED: Updated use_container_width=True to width='stretch'
+    st.dataframe(orders_df, width='stretch', hide_index=True)
 else:
     st.info("No orders processed today.")
 
