@@ -1,3 +1,4 @@
 streamlit
 dhanhq
 pandas
+yfinance
