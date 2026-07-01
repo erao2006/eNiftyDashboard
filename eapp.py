@@ -392,7 +392,6 @@ terminal_html = f"""
         <span class="value-neutral">{expiry_range}</span>
     </div>
 </div>
--->
 
 <div class="terminal-box">
     <div class="terminal-row">
@@ -400,6 +399,7 @@ terminal_html = f"""
         <span class="value" style="color: #00FF66;">: {breadth}</span>
     </div>
 </div>
+-->
 """
 st.markdown(terminal_html, unsafe_allow_html=True)
 
