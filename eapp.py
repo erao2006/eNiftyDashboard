@@ -356,6 +356,7 @@ terminal_html = f"""
     </div>
 </div>
 
+<!--
 <div class="terminal-box">
     <div class="terminal-row">
         <span class="label">ADV / DEC</span>
@@ -391,6 +392,7 @@ terminal_html = f"""
         <span class="value-neutral">{expiry_range}</span>
     </div>
 </div>
+-->
 
 <div class="terminal-box">
     <div class="terminal-row">
