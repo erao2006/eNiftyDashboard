@@ -243,18 +243,18 @@ def get_dhan_breadth():
 # ----------------------------------------------------
 # 3. Main Dashboard UI
 # ----------------------------------------------------
-st.title("📊 Live Market Terminal")
+# st.title("📊 Live Market Terminal")
 
 # Fetch Data
-adv, dec, unc = get_dhan_breadth()
+# adv, dec, unc = get_dhan_breadth()
 
 # Metrics
-st.markdown("### 📈 NIFTY 50 Advance / Decline")
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("🟢 Adv", adv)
-c2.metric("🔴 Dec", dec)
-c3.metric("⚪ Unch", unc)
-c4.metric("📊 Ratio", round(adv/dec, 2) if dec > 0 else adv)
+# st.markdown("### 📈 NIFTY 50 Advance / Decline")
+# c1, c2, c3, c4 = st.columns(4)
+# c1.metric("🟢 Adv", adv)
+# c2.metric("🔴 Dec", dec)
+# c3.metric("⚪ Unch", unc)
+# c4.metric("📊 Ratio", round(adv/dec, 2) if dec > 0 else adv)
 
 # P&L and other logic (Keep your original CSS and dataframe blocks below)
 st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
