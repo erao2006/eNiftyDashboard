@@ -313,7 +313,7 @@ positions_df = fetch_positions()
 
 # Example usage to display in Streamlit
 data = fetch_market_snapshot()
-st.write(data)
+# st.write(data)
 
 # ----------------------------------------------------
 # 4. Market Metric Assignment
