@@ -258,7 +258,11 @@ def get_dhan_breadth():
 # c4.metric("📊 Ratio", round(adv/dec, 2) if dec > 0 else adv)
 
 # P&L and other logic (Keep your original CSS and dataframe blocks below)
-st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
+# st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
+# Sync Footer
+ist_zone = ZoneInfo("Asia/Kolkata")
+current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
+st.markdown(f"<div style='padding-left: 2px; color: #666666; font-size: 0.85em; font-family: monospace; margin-top: 25px;'>Last Sync: {current_time}</div>", unsafe_allow_html=True)
 
 # ---- test ends ----
 
@@ -445,7 +449,3 @@ c4.metric("📊 A/D Ratio", ad_ratio)
 st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
 # ------
 
-# Sync Footer
-ist_zone = ZoneInfo("Asia/Kolkata")
-current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
-st.markdown(f"<div style='padding-left: 2px; color: #666666; font-size: 0.85em; font-family: monospace; margin-top: 25px;'>Last Sync: {current_time}</div>", unsafe_allow_html=True)
