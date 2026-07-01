@@ -143,11 +143,6 @@ def fetch_market_snapshot():
         
     return master_data
 
-# Example usage to display in Streamlit
-data = fetch_market_snapshot()
-st.write(data)
-
-
 
 def fetch_orders():
     try:
@@ -312,9 +307,13 @@ st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
 
 # Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
-market_data = fetch_market_snapshot()
+# market_data = fetch_market_snapshot()
 orders_df = fetch_orders()
 positions_df = fetch_positions()
+
+# Example usage to display in Streamlit
+data = fetch_market_snapshot()
+st.write(data)
 
 # ----------------------------------------------------
 # 4. Market Metric Assignment
@@ -444,7 +443,7 @@ terminal_html = f"""
 st.markdown("### 📊 Live Terminal Snapshot")
 st.markdown(terminal_html, unsafe_allow_html=True)
 
-
+"""
 st.markdown("### 📊 Live Terminal Snapshot")
 terminal_html = f"""
 <div class="terminal-box">
@@ -504,7 +503,7 @@ terminal_html = f"""
 -->
 """
 st.markdown(terminal_html, unsafe_allow_html=True)
-
+"""
 
 # ----------------------------------------------------
 # 7. Portfolio P&L Summary Banner
