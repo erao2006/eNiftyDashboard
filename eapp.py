@@ -142,8 +142,7 @@ def fetch_market_snapshot():
         master_data["NIFTY_FUTURE"] = master_data["NIFTY_SPOT"] + implied_premium
         master_data["NIFTY_FUTURE_PCT"] = master_data["NIFTY_SPOT_PCT"] # Simplified
         
-        st.success("🟢 Market Feed via Yahoo Finance: 200 OK")
-        
+        st.success("🟢 Market Feed via Yahoo Finance: 200 OK")       
     except Exception as e:
         st.error(f"🔴 Market Connection failed: {e}")
         
@@ -337,10 +336,6 @@ if nifty_spot > 0:
 else:
     support, resistance = 0, 0
     expiry_range = "0 - 0"
-
-pcr = 0.95  # Standard trading baseline visibility metric assignment
-advances, declines = 28, 22
-breadth = "BULLISH" if advances > declines else "BEARISH"
 
 # Determine formatting colors based on market movement flags
 spot_color = "#00FF66" if nifty_spot_pct >= 0 else "#FF4D4D"
