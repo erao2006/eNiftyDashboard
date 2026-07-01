@@ -55,53 +55,6 @@ except Exception as init_err:
 # ----------------------------------------------------
 # 3. Stable Market Engine (With Percentage Logic)
 # ----------------------------------------------------
-"""
-@st.cache_data(ttl=5)  
-def fetch_market_snapshot():
-    # Initializing default keys for calculations
-    master_data = {
-        "NIFTY_SPOT": 0.0, 
-        "NIFTY_SPOT_PCT": 0.0,
-        "NIFTY_FUTURE": 0.0,
-        "NIFTY_FUTURE_PCT": 0.0
-    }
-    
-    try:
-        # Querying live tracking indexes
-        tickers = yf.Tickers("^NSEI")
-        spot_ticker = tickers.tickers["^NSEI"]
-        
-        # Extract Nifty Spot Price & Previous Close
-        spot_history = spot_ticker.history(period="2d")
-        if len(spot_history) >= 1:
-            current_spot = float(spot_history["Close"].iloc[-1])
-            master_data["NIFTY_SPOT"] = current_spot
-            
-            # Fetch previous close to accurately calculate standard day change %
-            prev_close = spot_ticker.info.get("previousClose")
-            if not prev_close and len(spot_history) >= 2:
-                prev_close = float(spot_history["Close"].iloc[-2])
-                
-            if prev_close and prev_close > 0:
-                master_data["NIFTY_SPOT_PCT"] = ((current_spot - prev_close) / prev_close) * 100
-            
-            # Calculate Nifty Future via structural delta adjustments
-            implied_premium = 45.0  
-            current_future = current_spot + implied_premium
-            master_data["NIFTY_FUTURE"] = current_future
-            
-            if prev_close and prev_close > 0:
-                # Correlating the index derivative baseline trajectory
-                future_prev_close = prev_close + implied_premium
-                master_data["NIFTY_FUTURE_PCT"] = ((current_future - future_prev_close) / future_prev_close) * 100
-            
-        st.success("🟢 Market Feed via Yahoo Finance: 200 OK")
-    except Exception as e:
-        st.error(f"🔴 Market Connection failed: {e}")
-        
-    return master_data
-"""
-
 @st.cache_data(ttl=5)
 def fetch_market_snapshot():
     # 1. Initialize master_data with all required keys
