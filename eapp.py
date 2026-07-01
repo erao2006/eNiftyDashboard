@@ -104,11 +104,12 @@ def fetch_market_snapshot():
 
 @st.cache_data(ttl=5)
 def fetch_market_snapshot():
-    # Define indices to track with their Yahoo Finance tickers
-    indices = {
-        "NIFTY": "^NSEI",
-        "BANKNIFTY": "^NSEBANK",
-        "SENSEX": "^BSESN"
+    # Initializing keys for all indices
+    master_data = {
+        "NIFTY_SPOT": 0.0, "NIFTY_SPOT_PCT": 0.0,
+        "NIFTY_FUTURE": 0.0, "NIFTY_FUTURE_PCT": 0.0,
+        "BANKNIFTY_SPOT": 0.0, "BANKNIFTY_SPOT_PCT": 0.0,
+        "SENSEX_SPOT": 0.0, "SENSEX_SPOT_PCT": 0.0
     }
     
     # Initialize dictionary to hold all market data
