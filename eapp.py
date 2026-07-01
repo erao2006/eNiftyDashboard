@@ -416,9 +416,9 @@ sensex_spot_pct = market_data.get("SENSEX_SPOT_PCT", 0)
 # Using f-string syntax correctly without spaces before the colon
 # 1. Prepare formatted strings separately to avoid f-string syntax confusion
 nifty_fmt = f"{nifty_spot:,.2f} ({get_sign(nifty_spot_pct)}{nifty_spot_pct:.2f}%)"
-fut_fmt = f"{nifty_fut:,.2f} ({get_sign(nifty_fut_pct)}{nifty_fut_pct:.2f}%)"
-bn_fmt = f"{bn_spot:,.2f} ({get_sign(bn_pct)}{bn_pct:.2f}%)"
-sensex_fmt = f"{sensex_spot:,.0f} ({get_sign(sensex_pct)}{sensex_pct:.2f}%)"
+# fut_fmt = f"{nifty_fut:,.2f} ({get_sign(nifty_fut_pct)}{nifty_fut_pct:.2f}%)"
+bn_fmt = f"{bn_spot:,.2f} ({get_sign(bn_spot_pct)}{bn_spot_pct:.2f}%)"
+sensex_fmt = f"{sensex_spot:,.0f} ({get_sign(sensex_spot_pct)}{sensex_spot_pct:.2f}%)"
 
 # 2. Use double braces {{ }} for CSS to escape them, single for variables
 terminal_html = f"""
