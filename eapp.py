@@ -104,7 +104,7 @@ def fetch_market_snapshot():
 
 @st.cache_data(ttl=5)
 def fetch_market_snapshot():
-    # Initializing keys for all indices
+    # 1. Initialize master_data with all required keys
     master_data = {
         "NIFTY_SPOT": 0.0, "NIFTY_SPOT_PCT": 0.0,
         "NIFTY_FUTURE": 0.0, "NIFTY_FUTURE_PCT": 0.0,
@@ -112,18 +112,18 @@ def fetch_market_snapshot():
         "SENSEX_SPOT": 0.0, "SENSEX_SPOT_PCT": 0.0
     }
     
-    # Initialize dictionary to hold all market data
-    master_data = {}
+    # 2. Define indices locally inside the function
+    indices = {
+        "NIFTY": "^NSEI",
+        "BANKNIFTY": "^NSEBANK",
+        "SENSEX": "^BSESN"
+    }
     
     try:
-        # Loop through each index and fetch data
+        # Loop through each index
         for name, ticker_symbol in indices.items():
             ticker = yf.Ticker(ticker_symbol)
             history = ticker.history(period="2d")
-            
-            # Default structure
-            master_data[f"{name}_SPOT"] = 0.0
-            master_data[f"{name}_SPOT_PCT"] = 0.0
             
             if len(history) >= 1:
                 current_spot = float(history["Close"].iloc[-1])
@@ -137,13 +137,17 @@ def fetch_market_snapshot():
                 if prev_close and prev_close > 0:
                     master_data[f"{name}_SPOT_PCT"] = ((current_spot - prev_close) / prev_close) * 100
         
+        # Manual calculation for NIFTY_FUTURE (as per your original logic)
+        implied_premium = 45.0
+        master_data["NIFTY_FUTURE"] = master_data["NIFTY_SPOT"] + implied_premium
+        master_data["NIFTY_FUTURE_PCT"] = master_data["NIFTY_SPOT_PCT"] # Simplified
+        
         st.success("🟢 Market Feed via Yahoo Finance: 200 OK")
         
     except Exception as e:
         st.error(f"🔴 Market Connection failed: {e}")
         
     return master_data
-
 
 def fetch_orders():
     try:
