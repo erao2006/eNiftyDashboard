@@ -412,30 +412,25 @@ sensex_spot = data.get("SENSEX_SPOT", 0)
 sensex_spot_pct = data.get("SENSEX_SPOT_PCT", 0)
 
 # Build the HTML
+# Ensure these variables are defined before the f-string
+# Using f-string syntax correctly without spaces before the colon
 terminal_html = f"""
-<style>
-    .terminal-box {{ background-color: #1a1a1a; padding: 15px; border-radius: 8px; color: #fff; font-family: monospace; }}
-    .terminal-row {{ display: flex; justify-content: space-between; margin-bottom: 5px; }}
-    .label {{ color: #aaa; }}
-</style>
 <div class="terminal-box">
     <div class="terminal-row">
         <span class="label">NIFTY</span>
-        <span style="font-weight: bold; color: {get_color(nifty_spot_pct)};">
-            {nifty_spot:,.2f} ({get_sign(nifty_spot_pct)}{nifty_spot_pct:.2f}%)
-        </span>
+        <span style="font-weight: bold; color: {spot_color};">{nifty_spot:,.2f} ({spot_sign}{nifty_spot_pct:.2f}%)</span>
+    </div>
+    <div class="terminal-row">
+        <span class="label">FUTURE</span>
+        <span style="font-weight: bold; color: {fut_color};">{nifty_fut:,.2f} ({fut_sign}{nifty_fut_pct:.2f}%)</span>
     </div>
     <div class="terminal-row">
         <span class="label">BANKNIFTY</span>
-        <span style="font-weight: bold; color: {get_color(bn_spot_pct)};">
-            {bn_spot:,.2f} ({get_sign(bn_spot_pct)}{bn_spot_pct:.2f}%)
-        </span>
+        <span style="font-weight: bold; color: {bn_color};">{bn_spot:,.2f} ({bn_sign}{bn_pct:.2f}%)</span>
     </div>
     <div class="terminal-row">
         <span class="label">SENSEX</span>
-        <span style="font-weight: bold; color: {get_color(sensex_spot_pct)};">
-            {sensex_spot:,.0f} ({get_sign(sensex_spot_pct)}{sensex_spot_pct:.2f}%)
-        </span>
+        <span style="font-weight: bold; color: {sensex_color};">{sensex_spot:,.0f} ({sensex_sign}{sensex_pct:.2f}%)</span>
     </div>
 </div>
 """
