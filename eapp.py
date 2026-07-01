@@ -138,37 +138,58 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
+
 def get_nifty50_ad():
     try:
         data = yf.download(
             NIFTY50_SYMBOLS,
             period="2d",
             interval="1d",
-            progress=False,
+            group_by="ticker",
             auto_adjust=False,
+            progress=False,
             threads=True
         )
 
-        closes = data["Close"]
+        advances = 0
+        declines = 0
+        unchanged = 0
 
-        if len(closes) < 2:
-            return 0, 0, 50, 0.0
+        for symbol in NIFTY50_SYMBOLS:
+            try:
+                close = data[symbol]["Close"].dropna()
 
-        prev_close = closes.iloc[-2]
-        curr_close = closes.iloc[-1]
-        st.success("close prices:: ",{curr_close})
-        advances = (curr_close > prev_close).sum()
-        declines = (curr_close < prev_close).sum()
-        unchanged = (curr_close == prev_close).sum()
+                if len(close) < 2:
+                    continue
 
-        ratio = round(advances / declines, 2) if declines > 0 else float(advances)
+                prev_close = close.iloc[-2]
+                curr_close = close.iloc[-1]
 
-        return int(advances), int(declines), int(unchanged), ratio
+                if curr_close > prev_close:
+                    advances += 1
+                elif curr_close < prev_close:
+                    declines += 1
+                else:
+                    unchanged += 1
+
+            except Exception:
+                # Ignore failed downloads
+                continue
+
+        total = advances + declines + unchanged
+
+        ratio = round(advances / declines, 2) if declines else float(advances)
+
+        st.write(
+            f"Advances: {advances}, Declines: {declines}, "
+            f"Unchanged: {unchanged}, Valid Stocks: {total}"
+        )
+
+        return advances, declines, unchanged, ratio
 
     except Exception as e:
         st.error(f"A/D Error: {e}")
         return 0, 0, 50, 0.0
-
 # -------
 # ---- test to display nifty 50 security values
 
