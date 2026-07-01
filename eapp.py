@@ -21,7 +21,7 @@ NIFTY50_SYMBOLS = [
     "KOTAKBANK.NS", "LT.NS", "M&M.NS", "MARUTI.NS",
     "NESTLEIND.NS", "NTPC.NS", "ONGC.NS", "POWERGRID.NS",
     "RELIANCE.NS", "SBILIFE.NS", "SHRIRAMFIN.NS", "SBIN.NS",
-    "SUNPHARMA.NS", "TCS.NS", "TATACONSUM.NS", "TATAMOTORS.NS",
+    "SUNPHARMA.NS", "TCS.NS", "TATACONSUM.NS",
     "TATASTEEL.NS", "TECHM.NS", "TITAN.NS", "TRENT.NS",
     "ULTRACEMCO.NS", "WIPRO.NS"
 ]
@@ -156,7 +156,7 @@ def get_nifty50_ad():
 
         prev_close = closes.iloc[-2]
         curr_close = closes.iloc[-1]
-
+        st.success("close prices:: ",{curr_close})
         advances = (curr_close > prev_close).sum()
         declines = (curr_close < prev_close).sum()
         unchanged = (curr_close == prev_close).sum()
