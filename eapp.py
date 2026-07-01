@@ -445,68 +445,6 @@ terminal_html = f"""
 st.markdown("### 📊 Live Terminal Snapshot")
 st.markdown(terminal_html, unsafe_allow_html=True)
 
-"""
-st.markdown("### 📊 Live Terminal Snapshot")
-terminal_html = f"""
-<div class="terminal-box">
-    <div class="terminal-row">
-        <span class="label">NIFTY</span>
-        <span style="font-weight: bold; color: {spot_color};">{nifty_spot:,.2f} ({spot_sign}{nifty_spot_pct:.2f}%)</span>
-    </div>
-    <div class="terminal-row">
-        <span class="label">FUTURE</span>
-        <span style="font-weight: bold; color: {fut_color};">{nifty_fut:,.2f} ({fut_sign}{nifty_fut_pct:.2f}%)</span>
-    </div>
-</div>
-
-<!--
-<div class="terminal-box">
-    <div class="terminal-row">
-        <span class="label">ADV / DEC</span>
-        <span class="value-neutral">{advances} / {declines}</span>
-    </div>
-</div>
-
-<div class="terminal-box">
-    <div class="terminal-row">
-        <span class="label">PCR</span>
-        <span class="value-neutral">{pcr:.2f}</span>
-    </div>
-    <div class="terminal-row">
-        <span class="label">VIX</span>
-        <span class="value-neutral">{vix:.1f}</span>
-    </div>
-</div>
-
-<div class="terminal-box">
-    <div class="terminal-row">
-        <span class="label">SUPPORT</span>
-        <span class="value">{support}</span>
-    </div>
-    <div class="terminal-row">
-        <span class="label">RESISTANCE</span>
-        <span class="value">{resistance}</span>
-    </div>
-</div>
-
-<div class="terminal-box">
-    <div class="terminal-row">
-        <span class="label">EXPIRY RANGE</span>
-        <span class="value-neutral">{expiry_range}</span>
-    </div>
-</div>
-
-<div class="terminal-box">
-    <div class="terminal-row">
-        <span class="label">BREADTH</span>
-        <span class="value" style="color: #00FF66;">: {breadth}</span>
-    </div>
-</div>
--->
-"""
-st.markdown(terminal_html, unsafe_allow_html=True)
-"""
-
 # ----------------------------------------------------
 # 7. Portfolio P&L Summary Banner
 # ----------------------------------------------------
