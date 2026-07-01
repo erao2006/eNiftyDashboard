@@ -414,23 +414,30 @@ sensex_spot_pct = data.get("SENSEX_SPOT_PCT", 0)
 # Build the HTML
 # Ensure these variables are defined before the f-string
 # Using f-string syntax correctly without spaces before the colon
+# 1. Prepare formatted strings separately to avoid f-string syntax confusion
+nifty_fmt = f"{nifty_spot:,.2f} ({get_sign(nifty_spot_pct)}{nifty_spot_pct:.2f}%)"
+fut_fmt = f"{nifty_fut:,.2f} ({get_sign(nifty_fut_pct)}{nifty_fut_pct:.2f}%)"
+bn_fmt = f"{bn_spot:,.2f} ({get_sign(bn_pct)}{bn_pct:.2f}%)"
+sensex_fmt = f"{sensex_spot:,.0f} ({get_sign(sensex_pct)}{sensex_pct:.2f}%)"
+
+# 2. Use double braces {{ }} for CSS to escape them, single for variables
 terminal_html = f"""
-<div class="terminal-box">
-    <div class="terminal-row">
-        <span class="label">NIFTY</span>
-        <span style="font-weight: bold; color: {spot_color};">{nifty_spot:,.2f} ({spot_sign}{nifty_spot_pct:.2f}%)</span>
+<div style="background:#1a1a1a; padding:15px; border-radius:8px; color:white; font-family:monospace;">
+    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+        <span style="color:#aaa;">NIFTY</span>
+        <span style="font-weight:bold; color:{get_color(nifty_spot_pct)};">{nifty_fmt}</span>
     </div>
-    <div class="terminal-row">
-        <span class="label">FUTURE</span>
-        <span style="font-weight: bold; color: {fut_color};">{nifty_fut:,.2f} ({fut_sign}{nifty_fut_pct:.2f}%)</span>
+    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+        <span style="color:#aaa;">FUTURE</span>
+        <span style="font-weight:bold; color:{get_color(nifty_fut_pct)};">{fut_fmt}</span>
     </div>
-    <div class="terminal-row">
-        <span class="label">BANKNIFTY</span>
-        <span style="font-weight: bold; color: {bn_color};">{bn_spot:,.2f} ({bn_sign}{bn_pct:.2f}%)</span>
+    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+        <span style="color:#aaa;">BANKNIFTY</span>
+        <span style="font-weight:bold; color:{get_color(bn_pct)};">{bn_fmt}</span>
     </div>
-    <div class="terminal-row">
-        <span class="label">SENSEX</span>
-        <span style="font-weight: bold; color: {sensex_color};">{sensex_spot:,.0f} ({sensex_sign}{sensex_pct:.2f}%)</span>
+    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+        <span style="color:#aaa;">SENSEX</span>
+        <span style="font-weight:bold; color:{get_color(sensex_pct)};">{sensex_fmt}</span>
     </div>
 </div>
 """
