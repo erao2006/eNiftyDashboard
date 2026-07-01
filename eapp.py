@@ -172,7 +172,7 @@ def get_nifty50_ad():
 # -------
 # ---- test to display nifty 50 security values
 
-NIFTY50_SYMBOLS = [
+# NIFTY50_SYMBOLS = [
     "ADANIENT", "ADANIPORTS", "APOLLOHOSP", "ASIANPAINT", "AXISBANK",
     "BAJAJ-AUTO", "BAJFINANCE", "BAJAJFINSV", "BEL", "BHARTIARTL",
     "CIPLA", "COALINDIA", "DRREDDY", "EICHERMOT", "GRASIM",
