@@ -55,6 +55,7 @@ except Exception as init_err:
 # ----------------------------------------------------
 # 3. Stable Market Engine (With Percentage Logic)
 # ----------------------------------------------------
+"""
 @st.cache_data(ttl=5)  
 def fetch_market_snapshot():
     # Initializing default keys for calculations
@@ -99,6 +100,54 @@ def fetch_market_snapshot():
         st.error(f"🔴 Market Connection failed: {e}")
         
     return master_data
+"""
+
+@st.cache_data(ttl=5)
+def fetch_market_snapshot():
+    # Define indices to track with their Yahoo Finance tickers
+    indices = {
+        "NIFTY": "^NSEI",
+        "BANKNIFTY": "^NSEBANK",
+        "SENSEX": "^BSESN"
+    }
+    
+    # Initialize dictionary to hold all market data
+    master_data = {}
+    
+    try:
+        # Loop through each index and fetch data
+        for name, ticker_symbol in indices.items():
+            ticker = yf.Ticker(ticker_symbol)
+            history = ticker.history(period="2d")
+            
+            # Default structure
+            master_data[f"{name}_SPOT"] = 0.0
+            master_data[f"{name}_SPOT_PCT"] = 0.0
+            
+            if len(history) >= 1:
+                current_spot = float(history["Close"].iloc[-1])
+                master_data[f"{name}_SPOT"] = current_spot
+                
+                # Fetch previous close for % calculation
+                prev_close = ticker.info.get("previousClose")
+                if not prev_close and len(history) >= 2:
+                    prev_close = float(history["Close"].iloc[-2])
+                
+                if prev_close and prev_close > 0:
+                    master_data[f"{name}_SPOT_PCT"] = ((current_spot - prev_close) / prev_close) * 100
+        
+        st.success("🟢 Market Feed via Yahoo Finance: 200 OK")
+        
+    except Exception as e:
+        st.error(f"🔴 Market Connection failed: {e}")
+        
+    return master_data
+
+# Example usage to display in Streamlit
+data = fetch_market_snapshot()
+st.write(data)
+
+
 
 def fetch_orders():
     try:
@@ -343,6 +392,59 @@ st.markdown("---")
 # ----------------------------------------------------
 # 6. Live Market Terminal Block (Color-coded Updates)
 # ----------------------------------------------------
+
+# Assuming you have already fetched the data and it is stored in 'data'
+# e.g., data = fetch_market_snapshot()
+
+def get_color(pct):
+    return "green" if pct >= 0 else "red"
+
+def get_sign(pct):
+    return "+" if pct >= 0 else ""
+
+# Extracting values for clarity
+nifty_spot = data.get("NIFTY_SPOT", 0)
+nifty_spot_pct = data.get("NIFTY_SPOT_PCT", 0)
+
+bn_spot = data.get("BANKNIFTY_SPOT", 0)
+bn_spot_pct = data.get("BANKNIFTY_SPOT_PCT", 0)
+
+sensex_spot = data.get("SENSEX_SPOT", 0)
+sensex_spot_pct = data.get("SENSEX_SPOT_PCT", 0)
+
+# Build the HTML
+terminal_html = f"""
+<style>
+    .terminal-box {{ background-color: #1a1a1a; padding: 15px; border-radius: 8px; color: #fff; font-family: monospace; }}
+    .terminal-row {{ display: flex; justify-content: space-between; margin-bottom: 5px; }}
+    .label {{ color: #aaa; }}
+</style>
+<div class="terminal-box">
+    <div class="terminal-row">
+        <span class="label">NIFTY</span>
+        <span style="font-weight: bold; color: {get_color(nifty_spot_pct)};">
+            {nifty_spot:,.2f} ({get_sign(nifty_spot_pct)}{nifty_spot_pct:.2f}%)
+        </span>
+    </div>
+    <div class="terminal-row">
+        <span class="label">BANKNIFTY</span>
+        <span style="font-weight: bold; color: {get_color(bn_spot_pct)};">
+            {bn_spot:,.2f} ({get_sign(bn_spot_pct)}{bn_spot_pct:.2f}%)
+        </span>
+    </div>
+    <div class="terminal-row">
+        <span class="label">SENSEX</span>
+        <span style="font-weight: bold; color: {get_color(sensex_spot_pct)};">
+            {sensex_spot:,.0f} ({get_sign(sensex_spot_pct)}{sensex_spot_pct:.2f}%)
+        </span>
+    </div>
+</div>
+"""
+
+st.markdown("### 📊 Live Terminal Snapshot")
+st.markdown(terminal_html, unsafe_allow_html=True)
+
+
 st.markdown("### 📊 Live Terminal Snapshot")
 terminal_html = f"""
 <div class="terminal-box">
@@ -402,6 +504,7 @@ terminal_html = f"""
 -->
 """
 st.markdown(terminal_html, unsafe_allow_html=True)
+
 
 # ----------------------------------------------------
 # 7. Portfolio P&L Summary Banner
