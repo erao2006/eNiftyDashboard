@@ -433,11 +433,11 @@ terminal_html = f"""
     </div>
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <span style="color:#aaa;">BANKNIFTY</span>
-        <span style="font-weight:bold; color:{get_color(bn_pct)};">{bn_fmt}</span>
+        <span style="font-weight:bold; color:{get_color(bn_spot_pct)};">{bn_fmt}</span>
     </div>
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <span style="color:#aaa;">SENSEX</span>
-        <span style="font-weight:bold; color:{get_color(sensex_pct)};">{sensex_fmt}</span>
+        <span style="font-weight:bold; color:{get_color(sensex_spot_pct)};">{sensex_fmt}</span>
     </div>
 </div>
 """
