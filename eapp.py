@@ -316,7 +316,7 @@ orders_df = fetch_orders()
 positions_df = fetch_positions()
 
 # Example usage to display in Streamlit
-data = fetch_market_snapshot()
+market_data = fetch_market_snapshot()
 # st.write(data)
 
 # ----------------------------------------------------
@@ -402,14 +402,14 @@ def get_sign(pct):
     return "+" if pct >= 0 else ""
 
 # Extracting values for clarity
-nifty_spot = data.get("NIFTY_SPOT", 0)
-nifty_spot_pct = data.get("NIFTY_SPOT_PCT", 0)
+nifty_spot = market_data.get("NIFTY_SPOT", 0)
+nifty_spot_pct = market_data.get("NIFTY_SPOT_PCT", 0)
 
-bn_spot = data.get("BANKNIFTY_SPOT", 0)
-bn_spot_pct = data.get("BANKNIFTY_SPOT_PCT", 0)
+bn_spot = market_data.get("BANKNIFTY_SPOT", 0)
+bn_spot_pct = market_data.get("BANKNIFTY_SPOT_PCT", 0)
 
-sensex_spot = data.get("SENSEX_SPOT", 0)
-sensex_spot_pct = data.get("SENSEX_SPOT_PCT", 0)
+sensex_spot = market_data.get("SENSEX_SPOT", 0)
+sensex_spot_pct = market_data.get("SENSEX_SPOT_PCT", 0)
 
 # Build the HTML
 # Ensure these variables are defined before the f-string
