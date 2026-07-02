@@ -439,23 +439,7 @@ adv, dec, unc, ad_ratio = get_nifty50_ad()
 
 st.markdown("### 📈 NIFTY 50 Advance / Decline")
 
-c1, c2, c3, c4 = st.columns(4)
-
-c1.metric("🟢 Advance", adv)
-c2.metric("🔴 Decline", dec)
-c3.metric("⚪ Unchanged", unc)
-c4.metric("📊 A/D Ratio", ad_ratio)
-
-# Prepare data for the table
-#ad_data = {
-#    "Status": ["Advance", "Decline", "Unchanged", "A/D Ratio"],
-#    "Value": [adv, dec, unc, ad_ratio]
-#}
-
-#df_ad = pd.DataFrame(ad_data)
-
-# Display as a table
-#st.table(df_ad)
+# c1, c2, c3, c4 = st.columns(4)
 
 # Prepare data for a horizontal table
 ad_data = {
@@ -471,6 +455,6 @@ df_ad = pd.DataFrame(ad_data)
 # 'hide_index' removes the 0, 1, 2 row numbers for a cleaner look
 st.table(df_ad.style.hide(axis="index"))
 
-st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
+# st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
 # ------
 
