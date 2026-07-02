@@ -446,7 +446,7 @@ ad_data = {
     "Advance": [adv],
     "Decline": [dec],
     "Unchanged": [unc],
-    "A/D Ratio": [ad_ratio]
+    "A/D Ratio": [f"{ad_ratio:.2f}"]
 }
 
 df_ad = pd.DataFrame(ad_data)
