@@ -447,16 +447,29 @@ c3.metric("⚪ Unchanged", unc)
 c4.metric("📊 A/D Ratio", ad_ratio)
 
 # Prepare data for the table
+#ad_data = {
+#    "Status": ["Advance", "Decline", "Unchanged", "A/D Ratio"],
+#    "Value": [adv, dec, unc, ad_ratio]
+#}
+
+#df_ad = pd.DataFrame(ad_data)
+
+# Display as a table
+#st.table(df_ad)
+
+# Prepare data for a horizontal table
 ad_data = {
-    "Status": ["Advance", "Decline", "Unchanged", "A/D Ratio"],
-    "Value": [adv, dec, unc, ad_ratio]
+    "Advance": [adv],
+    "Decline": [dec],
+    "Unchanged": [unc],
+    "A/D Ratio": [ad_ratio]
 }
 
 df_ad = pd.DataFrame(ad_data)
 
-# Display as a table
-st.table(df_ad)
-
+# Display as a clean horizontal table
+# 'hide_index' removes the 0, 1, 2 row numbers for a cleaner look
+st.table(df_ad.style.hide(axis="index"))
 
 st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
 # ------
