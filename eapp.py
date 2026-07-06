@@ -296,7 +296,7 @@ def get_dhan_breadth():
 # st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
 # Sync Footer
 ist_zone = ZoneInfo("Asia/Kolkata")
-current_time = datetime.datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
+current_time = datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
 st.markdown(f"<div style='padding-left: 2px; color: #666666; font-size: 0.85em; font-family: monospace; margin-top: 25px;'>Last Sync: {current_time}</div>", unsafe_allow_html=True)
 
 # ---- test ends ----
