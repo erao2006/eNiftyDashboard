@@ -141,7 +141,7 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
-
+@st.fragment(run_every="5s")
 def get_nifty50_ad():
     try:
         data = yf.download(
