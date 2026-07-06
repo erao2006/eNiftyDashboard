@@ -56,6 +56,7 @@ except Exception as init_err:
 # 3. Stable Market Engine (With Percentage Logic)
 # ----------------------------------------------------
 @st.cache_data(ttl=5)
+@st.fragment(run_every="5s")
 def fetch_market_snapshot():
     # 1. Initialize master_data with all required keys
     master_data = {
@@ -141,7 +142,7 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
-@st.fragment(run_every="5s")
+@st.fragment(run_every="30s")
 def get_nifty50_ad():
     try:
         data = yf.download(
