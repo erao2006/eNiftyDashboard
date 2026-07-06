@@ -7,7 +7,7 @@ from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
 from streamlit_autorefresh import st_autorefresh
-from datetime import datetime
+import datetime
 import pytz
 # -------
 # new section
