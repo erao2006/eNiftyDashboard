@@ -419,10 +419,12 @@ terminal_html = f"""
         <span style="color:#aaa;">NIFTY</span>
         <span style="font-weight:bold; color:{get_color(nifty_spot_pct)};">{nifty_fmt}</span>
     </div>
+    <!--
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <span style="color:#aaa;">FUTURE</span>
         <span style="font-weight:bold; color:{get_color(nifty_fut_pct)};">{fut_fmt}</span>
     </div>
+    -->
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <span style="color:#aaa;">BANKNIFTY</span>
         <span style="font-weight:bold; color:{get_color(bn_spot_pct)};">{bn_fmt}</span>
