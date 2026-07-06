@@ -2,3 +2,4 @@ streamlit
 dhanhq
 pandas
 yfinance
+streamlit-autorefresh
