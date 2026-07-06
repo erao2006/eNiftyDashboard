@@ -101,6 +101,7 @@ def fetch_market_snapshot():
         
     return master_data
 
+@st.fragment(run_every="5s")
 def fetch_orders():
     try:
         response = dhan.get_order_list()
@@ -118,6 +119,7 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
+@st.fragment(run_every="5s")
 def fetch_positions():
     try:
         response = dhan.get_positions()
