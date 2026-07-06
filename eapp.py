@@ -71,7 +71,7 @@ def is_market_open():
         return False
     
     # Create start and end time objects for the current day in IST
-    start_time = now.replace(hour=9, minute=05, second=0, microsecond=0)
+    start_time = now.replace(hour=9, minute=5, second=0, microsecond=0)
     end_time = now.replace(hour=15, minute=35, second=0, microsecond=0)
     
     return start_time <= now <= end_time
