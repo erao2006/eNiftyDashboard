@@ -38,23 +38,6 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(page_title="Dhan Monitor & Portfolio", layout="centered")
 
-# ----------------------------------------------------
-# 2. Authentication Setup via Secrets
-# ----------------------------------------------------
-try:
-    CLIENT_ID = st.secrets["DHAN_CLIENT_ID"]
-    ACCESS_TOKEN = st.secrets["DHAN_ACCESS_TOKEN"]
-except Exception:
-    CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
-    ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
-
-try:
-    dhan_context = DhanContext(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
-    dhan = dhanhq(dhan_context)
-except Exception as init_err:
-    st.error(f"🔴 System Configuration Error | Initialization Failed: {init_err}")
-    st.stop()
-
 # --------------------------
 # Condition for market hours 
 # --------------------------
@@ -83,6 +66,24 @@ st_autorefresh(interval=15000, key="market_refresh")
 if not is_market_open():
     st.info("Market is currently closed. Updates are paused.")
     st.stop()  # Everything below this line will not execute when market is closed
+
+# ----------------------------------------------------
+# 2. Authentication Setup via Secrets
+# ----------------------------------------------------
+try:
+    CLIENT_ID = st.secrets["DHAN_CLIENT_ID"]
+    ACCESS_TOKEN = st.secrets["DHAN_ACCESS_TOKEN"]
+except Exception:
+    CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
+    ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
+
+try:
+    dhan_context = DhanContext(client_id=CLIENT_ID, access_token=ACCESS_TOKEN)
+    dhan = dhanhq(dhan_context)
+except Exception as init_err:
+    st.error(f"🔴 System Configuration Error | Initialization Failed: {init_err}")
+    st.stop()
+
 
 # ----------------------------------------------------
 # 3. Stable Market Engine (With Percentage Logic)
