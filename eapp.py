@@ -10,9 +10,14 @@ from streamlit_autorefresh import st_autorefresh
 import pytz
 from datetime import datetime
 
+ist_zone = ZoneInfo("Asia/Kolkata")
+current_time = datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
+st.markdown(f"<div style='padding-left: 2px; color: #666666; font-size: 0.85em; font-family: monospace; margin-top: 25px;'>Last Sync: {current_time}</div>", unsafe_allow_html=True)
+
 # -------
 # new section
 # --------
+'''
 NIFTY50_SYMBOLS = [
     "ADANIENT.NS", "ADANIPORTS.NS", "APOLLOHOSP.NS", "ASIANPAINT.NS",
     "AXISBANK.NS", "BAJAJ-AUTO.NS", "BAJFINANCE.NS", "BAJAJFINSV.NS",
@@ -27,6 +32,23 @@ NIFTY50_SYMBOLS = [
     "SUNPHARMA.NS", "TCS.NS", "TATACONSUM.NS", "TMPV.NS",
     "TATASTEEL.NS", "TECHM.NS", "TITAN.NS", "TRENT.NS",
     "ULTRACEMCO.NS", "WIPRO.NS"
+]
+'''
+
+NIFTY50_SYMBOLS = [
+    "ADANIENT.NS", "ADANIPORTS.NS", "APOLLOHOSP.NS", "ASIANPAINT.NS",
+    "AXISBANK.NS", "BAJAJ-AUTO.NS", "BAJFINANCE.NS", "BAJAJFINSV.NS",
+    "BEL.NS", "BHARTIARTL.NS", "BPCL.NS", "BRITANNIA.NS",
+    "CIPLA.NS", "COALINDIA.NS", "DIVISLAB.NS", "DRREDDY.NS",
+    "EICHERMOT.NS", "GRASIM.NS", "HCLTECH.NS", "HDFCBANK.NS",
+    "HDFCLIFE.NS", "HEROMOTOCO.NS", "HINDALCO.NS", "HINDUNILVR.NS",
+    "ICICIBANK.NS", "INDIGO.NS", "INDUSINDBK.NS", "INFY.NS",
+    "ITC.NS", "JSWSTEEL.NS", "KOTAKBANK.NS", "LT.NS",
+    "M&M.NS", "MARUTI.NS", "NESTLEIND.NS", "NTPC.NS",
+    "ONGC.NS", "POWERGRID.NS", "RELIANCE.NS", "SBILIFE.NS",
+    "SBIN.NS", "SHRIRAMFIN.NS", "SUNPHARMA.NS", "TATACONSUM.NS",
+    "TATAMOTORS.NS", "TATASTEEL.NS", "TECHM.NS", "TITAN.NS",
+    "TRENT.NS", "ULTRACEMCO.NS", "WIPRO.NS"
 ]
 
 
@@ -296,9 +318,6 @@ def get_dhan_breadth():
 # P&L and other logic (Keep your original CSS and dataframe blocks below)
 # st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
 # Sync Footer
-ist_zone = ZoneInfo("Asia/Kolkata")
-current_time = datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
-st.markdown(f"<div style='padding-left: 2px; color: #666666; font-size: 0.85em; font-family: monospace; margin-top: 25px;'>Last Sync: {current_time}</div>", unsafe_allow_html=True)
 
 # ---- test ends ----
 
