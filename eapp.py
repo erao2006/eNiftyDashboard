@@ -59,8 +59,8 @@ def is_market_open():
     
     return start_time <= now <= end_time
 
-# Refresh every 60 seconds
-st_autorefresh(interval=60000, key="market_refresh")
+# Refresh every 360 seconds
+st_autorefresh(interval=360000, key="market_refresh")
 
 # --- Early Exit Logic ---
 if not is_market_open():
@@ -89,7 +89,7 @@ except Exception as init_err:
 # 3. Stable Market Engine (With Percentage Logic)
 # ----------------------------------------------------
 @st.cache_data(ttl=5)
-# @st.fragment(run_every="10s")
+@st.fragment(run_every="30s")
 def fetch_market_snapshot():
     # 1. Initialize master_data with all required keys
     master_data = {
@@ -135,7 +135,7 @@ def fetch_market_snapshot():
         
     return master_data
 
-@st.fragment(run_every="5s")
+@st.fragment(run_every="10s")
 def fetch_orders():
     try:
         response = dhan.get_order_list()
@@ -153,7 +153,7 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
-@st.fragment(run_every="5s")
+@st.fragment(run_every="10s")
 def fetch_positions():
     try:
         response = dhan.get_positions()
