@@ -17,7 +17,7 @@ st.markdown(f"<div style='padding-left: 2px; color: #666666; font-size: 0.85em; 
 # -------
 # new section
 # --------
-'''
+"""
 NIFTY50_SYMBOLS = [
     "ADANIENT.NS", "ADANIPORTS.NS", "APOLLOHOSP.NS", "ASIANPAINT.NS",
     "AXISBANK.NS", "BAJAJ-AUTO.NS", "BAJFINANCE.NS", "BAJAJFINSV.NS",
@@ -33,7 +33,7 @@ NIFTY50_SYMBOLS = [
     "TATASTEEL.NS", "TECHM.NS", "TITAN.NS", "TRENT.NS",
     "ULTRACEMCO.NS", "WIPRO.NS"
 ]
-'''
+"""
 
 NIFTY50_SYMBOLS = [
     "ADANIENT.NS", "ADANIPORTS.NS", "APOLLOHOSP.NS", "ASIANPAINT.NS",
