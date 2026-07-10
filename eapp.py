@@ -213,9 +213,9 @@ def get_nifty50_ad():
         )
 
         # Check if there were any failures
+        # Place this immediately after the yf.download() call
         if shared._ERRORS:
-            failed_tickers = list(shared._ERRORS.keys())
-            st.warning(f"Failed to download: {', '.join(failed_tickers)}")
+            st.error(f"Symbols failed to download: {list(shared._ERRORS.keys())}")
 
         advances = 0
         declines = 0
