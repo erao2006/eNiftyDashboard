@@ -217,7 +217,7 @@ def get_nifty50_ad():
 
         # These are the ones that actually came back
         downloaded = data.columns.get_level_values(0).unique().tolist()
-        missing = [s for s in symbols if s not in downloaded]
+        missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
 
         print(f"Successfully downloaded: {len(downloaded)}")
         print(f"Missing: {len(missing)}")
