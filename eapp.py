@@ -212,6 +212,16 @@ def get_nifty50_ad():
             progress=False,
             threads=True
         )
+        
+        #data = yf.download(symbols, period="2d", group_by="ticker", progress=True)
+
+        # These are the ones that actually came back
+        downloaded = data.columns.get_level_values(0).unique().tolist()
+        missing = [s for s in symbols if s not in downloaded]
+
+        print(f"Successfully downloaded: {len(downloaded)}")
+        print(f"Missing: {len(missing)}")
+        print("List of missing:", missing)
 
         # 2. Critical Safety: Verify data isn't empty before looping
         if data.empty:
@@ -224,7 +234,7 @@ def get_nifty50_ad():
             try:
                 # Handle potential missing columns safely
                 if symbol not in data.columns.levels[0]:
-                    st.write(f"symbol: {symbol}") 
+                    #st.write(f"symbol: {symbol}") 
                     continue
                 
                 close = data[symbol]["Close"].dropna()
