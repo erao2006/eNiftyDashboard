@@ -198,63 +198,46 @@ def fetch_positions():
 # new section
 @st.fragment(run_every="30s")
 def get_nifty50_ad():
-    try:
-        data = yf.download(
-            NIFTY50_SYMBOLS,
-            period="2d",
-            interval="1d",
-            group_by="ticker",
-            auto_adjust=False,
-            progress=False,
-            threads=True
-        )
-
-        # 1. Identify which symbols are actually in the data
-        # data.columns.levels[0] contains the tickers that were successfully downloaded
-        downloaded_symbols = data.columns.levels[0].tolist()
+    # 1. Fetch the data
+    data = yf.download(
+        NIFTY50_SYMBOLS, 
+        period="2d", 
+        interval="1d", 
+        group_by="ticker", 
+        progress=False
+    )
+    
+    # 2. Identify which symbols were successfully downloaded
+    # We look at the top level of the MultiIndex columns
+    downloaded_symbols = data.columns.get_level_values(0).unique().tolist()
+    
+    # 3. CRITICAL DEBUG STEP: Find which ones are missing from the original list
+    missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded_symbols]
+    
+    if missing:
+        st.error(f"Missing {len(missing)} stocks from the 50 requested:")
+        st.write(missing) # This displays the list of 17 missing symbols
         
-        # 2. Find the missing ones by set difference
-        missing_symbols = [s for s in NIFTY50_SYMBOLS if s not in downloaded_symbols]
-        
-        # 3. Display the missing list
-        if missing_symbols:
-            st.warning(f"Missing data for: {', '.join(missing_symbols)}")
-
-        advances = 0
-        declines = 0
-        unchanged = 0
-        valid_count = 0
-
-        # 4. Iterate only through the symbols that exist in the downloaded data
-        for symbol in downloaded_symbols:
-            close = data[symbol]["Close"].dropna()
+    # 4. Perform calculations only on downloaded_symbols
+    advances = 0
+    declines = 0
+    unchanged = 0
+    
+    for symbol in downloaded_symbols:
+        close = data[symbol]["Close"].dropna()
+        if len(close) < 2:
+            continue
             
-            if len(close) < 2:
-                continue
-
-            prev_close = close.iloc[-2]
-            curr_close = close.iloc[-1]
-
-            if curr_close > prev_close:
-                advances += 1
-            elif curr_close < prev_close:
-                declines += 1
-            else:
-                unchanged += 1
-            valid_count += 1
-
-        ratio = round(advances / declines, 2) if declines else float(advances)
-
-        st.write(
-            f"Advances: {advances}, Declines: {declines}, "
-            f"Unchanged: {unchanged}, Valid Stocks: {valid_count}"
-        )
-
-        return advances, declines, unchanged, ratio
-
-    except Exception as e:
-        st.error(f"A/D Error: {e}")
-        return 0, 0, 0, 0.0
+        if close.iloc[-1] > close.iloc[-2]:
+            advances += 1
+        elif close.iloc[-1] < close.iloc[-2]:
+            declines += 1
+        else:
+            unchanged += 1
+            
+    st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}")
+    
+    return advances, declines, unchanged
 
 # -------
 # ---- test to display nifty 50 security values
