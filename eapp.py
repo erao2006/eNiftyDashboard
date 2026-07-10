@@ -202,8 +202,19 @@ def get_nifty50_ad():
     safe_return = (0, 0, 0, 0.0)
     c = st.container()
     # Place this inside get_nifty50_ad() after the download line
-    downloaded = data.columns.get_level_values(0).unique().tolist()
+    # Safer way to identify tickers regardless of MultiIndex structure
+    if isinstance(data.columns, pd.MultiIndex):
+    # This handles the case where you have multiple tickers (level 0 is usually the ticker)
+        downloaded = data.columns.get_level_values(0).unique().tolist()
+    else:
+    # This handles the case where yfinance returned a flat Index (e.g., single ticker)
+    # If group_by='ticker', it might be a simple column list
+        downloaded = [s for s in NIFTY50_SYMBOLS if s in data.columns]
+
+    #downloaded = data.columns.get_level_values(0).unique().tolist()
     missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
+    st.write("Debug - Column structure:", data.columns)
+    st.write("Debug - Column type:", type(data.columns))
 
     if missing:
         with st.expander("Click to see missing tickers"):
