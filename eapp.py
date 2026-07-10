@@ -9,6 +9,7 @@ import logging
 from streamlit_autorefresh import st_autorefresh
 import pytz
 from datetime import datetime
+import yfinance.shared as shared # Import shared to access errors
 
 ist_zone = ZoneInfo("Asia/Kolkata")
 current_time = datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
@@ -198,6 +199,9 @@ def fetch_positions():
 @st.fragment(run_every="30s")
 def get_nifty50_ad():
     try:
+        # Reset errors from previous calls
+        shared._ERRORS = {}
+        
         data = yf.download(
             NIFTY50_SYMBOLS,
             period="2d",
@@ -208,14 +212,21 @@ def get_nifty50_ad():
             threads=True
         )
 
+        # Check if there were any failures
+        if shared._ERRORS:
+            failed_tickers = list(shared._ERRORS.keys())
+            st.warning(f"Failed to download: {', '.join(failed_tickers)}")
+
         advances = 0
         declines = 0
         unchanged = 0
+        valid_count = 0
 
         for symbol in NIFTY50_SYMBOLS:
-            try:
+            # Skip if the symbol failed to download
+            if symbol in data.columns.levels[0]:
                 close = data[symbol]["Close"].dropna()
-
+                
                 if len(close) < 2:
                     continue
 
@@ -228,26 +239,20 @@ def get_nifty50_ad():
                     declines += 1
                 else:
                     unchanged += 1
-
-            except Exception:
-                # Ignore failed downloads
-                st.write(f"symbol: {symbol}")
-                continue
-
-        total = advances + declines + unchanged
+                valid_count += 1
 
         ratio = round(advances / declines, 2) if declines else float(advances)
 
         st.write(
             f"Advances: {advances}, Declines: {declines}, "
-            f"Unchanged: {unchanged}, Valid Stocks: {total}"
+            f"Unchanged: {unchanged}, Valid Stocks: {valid_count}"
         )
 
         return advances, declines, unchanged, ratio
 
     except Exception as e:
         st.error(f"A/D Error: {e}")
-        return 0, 0, 50, 0.0
+        return 0, 0, 0, 0.0
 # -------
 # ---- test to display nifty 50 security values
 
