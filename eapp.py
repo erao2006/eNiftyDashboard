@@ -199,42 +199,39 @@ def fetch_positions():
 @st.fragment(run_every="30s")
 def get_nifty50_ad():
     try:
-        # 1. Fetch data
+        # Perform the download
         data = yf.download(NIFTY50_SYMBOLS, period="2d", interval="1d", group_by="ticker", progress=False)
         
-        # 2. Get list of successfully fetched tickers from the multi-index columns
+        # Validate data
+        if data.empty or "Close" not in data.columns:
+            raise ValueError("No valid data received")
+            
         downloaded = data.columns.get_level_values(0).unique().tolist()
-        
-        # 3. Identify failures
         missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
         
-        # 4. Display missing symbols if any
-        if missing:
-            st.error(f"Failed to fetch {len(missing)} stocks: {', '.join(missing)}")
-        
-        # 5. Calculation
+        # --- Calculation Logic ---
         advances = declines = unchanged = 0
         for symbol in downloaded:
-            # Use .get() or direct access safely
             close = data[symbol]["Close"].dropna()
-            if len(close) < 2: continue
-            
-            if close.iloc[-1] > close.iloc[-2]: advances += 1
-            elif close.iloc[-1] < close.iloc[-2]: declines += 1
-            else: unchanged += 1
-            
+            if len(close) >= 2:
+                if close.iloc[-1] > close.iloc[-2]: advances += 1
+                elif close.iloc[-1] < close.iloc[-2]: declines += 1
+                else: unchanged += 1
+        
         ratio = round(advances / declines, 2) if declines > 0 else float(advances)
         
-        # 6. Display the metrics
-        st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}")
-        
-        # Always return 4 values
-        return advances, declines, unchanged, ratio
-
     except Exception as e:
-        st.error(f"Error in calculation: {e}")
-        # Return 0s to prevent line 485 from crashing
+        # Log the error and return zeros
+        st.error(f"Error updating NIFTY50 data: {e}")
         return 0, 0, 0, 0.0
+    
+    else:
+        # This block only executes if the try block succeeded
+        if missing:
+            st.warning(f"Missing {len(missing)} stocks. Check ticker validity.")
+            
+        st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}")
+        return advances, declines, unchanged, ratio
 
 # -------
 # ---- test to display nifty 50 security values
