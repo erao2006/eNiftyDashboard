@@ -196,42 +196,50 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
-@st.fragment(run_every="30s")
+@st.fragment(run_every="10s")
 def get_nifty50_ad():
+    # 1. Define safe default return
+    safe_return = (0, 0, 0, 0.0)
+    
     try:
-        # Perform the download
-        data = yf.download(NIFTY50_SYMBOLS, period="2d", interval="1d", group_by="ticker", progress=False)
+        # 2. Fetch data
+        data = yf.download(
+            NIFTY50_SYMBOLS, 
+            period="2d", 
+            interval="1d", 
+            group_by="ticker", 
+            progress=False,
+            threads=True
+        )
         
-        # Validate data
+        # 3. If data is empty, return zeros
         if data.empty or "Close" not in data.columns:
-            raise ValueError("No valid data received")
-            
+            st.warning("No data retrieved. Retrying in 10s...")
+            return safe_return
+
+        # 4. Filter to valid symbols only
         downloaded = data.columns.get_level_values(0).unique().tolist()
-        missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
         
-        # --- Calculation Logic ---
+        # 5. Calculate metrics
         advances = declines = unchanged = 0
         for symbol in downloaded:
             close = data[symbol]["Close"].dropna()
-            if len(close) >= 2:
-                if close.iloc[-1] > close.iloc[-2]: advances += 1
-                elif close.iloc[-1] < close.iloc[-2]: declines += 1
-                else: unchanged += 1
-        
+            if len(close) < 2: continue
+            
+            if close.iloc[-1] > close.iloc[-2]: advances += 1
+            elif close.iloc[-1] < close.iloc[-2]: declines += 1
+            else: unchanged += 1
+            
         ratio = round(advances / declines, 2) if declines > 0 else float(advances)
         
-    except Exception as e:
-        # Log the error and return zeros
-        st.error(f"Error updating NIFTY50 data: {e}")
-        return 0, 0, 0, 0.0
-    
-    else:
-        # This block only executes if the try block succeeded
-        if missing:
-            st.warning(f"Missing {len(missing)} stocks. Check ticker validity.")
-            
-        st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}")
+        # 6. Display success
+        st.write(f"Advances: {advances}, Declines: {declines}, Valid: {len(downloaded)}")
         return advances, declines, unchanged, ratio
+
+    except Exception as e:
+        # 7. Catch-all for any other error
+        st.error(f"Error: {e}")
+        return safe_return
 
 # -------
 # ---- test to display nifty 50 security values
