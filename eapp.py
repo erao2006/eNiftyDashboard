@@ -196,50 +196,38 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
+import yfinance as yf
+import streamlit as st
+import datetime
+
+# --- YOUR SYMBOL LIST HERE ---
+NIFTY50_SYMBOLS = [...] 
+
 @st.fragment(run_every="10s")
 def get_nifty50_ad():
-    # 1. Define safe default return
-    safe_return = (0, 0, 0, 0.0)
+    c = st.container()
     
     try:
-        # 2. Fetch data
-        data = yf.download(
-            NIFTY50_SYMBOLS, 
-            period="2d", 
-            interval="1d", 
-            group_by="ticker", 
-            progress=False,
-            threads=True
-        )
+        # Download data
+        data = yf.download(NIFTY50_SYMBOLS, period="2d", interval="1d", group_by="ticker", progress=False)
         
-        # 3. If data is empty, return zeros
-        if data.empty or "Close" not in data.columns:
-            st.warning("No data retrieved. Retrying in 10s...")
-            return safe_return
-
-        # 4. Filter to valid symbols only
+        # Get successfully returned tickers
         downloaded = data.columns.get_level_values(0).unique().tolist()
         
-        # 5. Calculate metrics
-        advances = declines = unchanged = 0
-        for symbol in downloaded:
-            close = data[symbol]["Close"].dropna()
-            if len(close) < 2: continue
-            
-            if close.iloc[-1] > close.iloc[-2]: advances += 1
-            elif close.iloc[-1] < close.iloc[-2]: declines += 1
-            else: unchanged += 1
-            
-        ratio = round(advances / declines, 2) if declines > 0 else float(advances)
+        # Calculate missing
+        missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
         
-        # 6. Display success
-        st.write(f"Advances: {advances}, Declines: {declines}, Valid: {len(downloaded)}")
-        return advances, declines, unchanged, ratio
-
+        # --- DISPLAY DIAGNOSTIC ---
+        if missing:
+            c.error(f"Missing {len(missing)} stocks. These tickers are invalid on Yahoo Finance:")
+            c.write(missing) # THIS LIST IS THE ANSWER
+        
+        # Calculation ...
+        # (rest of your logic)
+            
     except Exception as e:
-        # 7. Catch-all for any other error
-        st.error(f"Error: {e}")
-        return safe_return
+        c.error(f"Error: {e}")
+        return 0, 0, 0, 0.0
 
 # -------
 # ---- test to display nifty 50 security values
