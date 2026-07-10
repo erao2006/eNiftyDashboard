@@ -198,63 +198,35 @@ def fetch_positions():
 # new section
 @st.fragment(run_every="10s")
 def get_nifty50_ad():
-    # Always define this so it can be returned on failure
+    # 1. Define the mandatory 4-value return
     safe_return = (0, 0, 0, 0.0)
-    c = st.container()
-    # Place this inside get_nifty50_ad() after t
-
-        # ... (after downloading data) ...
-
-    # Use hasattr to safely check for MultiIndex without needing 'pd' directly
-    if hasattr(data.columns, 'get_level_values'):
-        # This is a MultiIndex (standard for multiple tickers)
-        downloaded = data.columns.get_level_values(0).unique().tolist()
-    else:
-        # This handles cases where data might be a single ticker or flat index
-        downloaded = [s for s in NIFTY50_SYMBOLS if s in data.columns]
-            
-        # Optional: Add this to see what you actually got
-    st.write(f"Debug: Found {len(downloaded)} tickers in data columns.")
-
-    #downloaded = data.columns.get_level_values(0).unique().tolist()
-    missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
-    #st.write("Debug - Column structure:", data.columns)
-    #st.write("Debug - Column type:", type(data.columns))
-
-    if missing:
-        with st.expander("Click to see missing tickers"):
-            st.write(missing)
-
+    
     try:
-        # Validate list
-        if any(not isinstance(s, str) for s in NIFTY50_SYMBOLS):
-            c.error("Error: NIFTY50_SYMBOLS contains non-string items (check for '...')")
-            return safe_return
-
-        data = yf.download(NIFTY50_SYMBOLS, period="2d", interval="1d", group_by="ticker", progress=False)
+        data = yf.download(NIFTY_SYMBOLS, period="2d", group_by="ticker", progress=False)
         
-        if data.empty or "Close" not in data.columns:
-            c.warning("No data retrieved.")
+        if data.empty:
             return safe_return
-
-        downloaded = data.columns.get_level_values(0).unique().tolist()
         
-        advances = declines = unchanged = 0
-        for symbol in downloaded:
-            close = data[symbol]["Close"].dropna()
-            if len(close) < 2: continue
-            
-            if close.iloc[-1] > close.iloc[-2]: advances += 1
-            elif close.iloc[-1] < close.iloc[-2]: declines += 1
-            else: unchanged += 1
-            
+        advances = 0
+        declines = 0
+        
+        for symbol in NIFTY_SYMBOLS:
+            if symbol in data:
+                df = data[symbol]
+                if len(df) >= 2:
+                    if df['Close'].iloc[-1] > df['Close'].iloc[-2]:
+                        advances += 1
+                    elif df['Close'].iloc[-1] < df['Close'].iloc[-2]:
+                        declines += 1
+        
+        # Calculate ratio safely
+        unchanged = len(NIFTY_SYMBOLS) - advances - declines
         ratio = round(advances / declines, 2) if declines > 0 else float(advances)
         
-        c.write(f"Advances: {advances}, Declines: {declines}, Valid: {len(downloaded)}")
         return advances, declines, unchanged, ratio
-
-    except Exception as e:
-        c.error(f"Error: {e}")
+        
+    except Exception:
+        # Always return 4 values even on error
         return safe_return
 
 
