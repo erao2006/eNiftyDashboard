@@ -199,18 +199,23 @@ def fetch_positions():
 @st.fragment(run_every="30s")
 def get_nifty50_ad():
     try:
+        # 1. Fetch data
         data = yf.download(NIFTY50_SYMBOLS, period="2d", interval="1d", group_by="ticker", progress=False)
         
-        # Identify downloaded vs missing
+        # 2. Get list of successfully fetched tickers from the multi-index columns
         downloaded = data.columns.get_level_values(0).unique().tolist()
+        
+        # 3. Identify failures
         missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
         
+        # 4. Display missing symbols if any
         if missing:
-            st.error(f"Missing {len(missing)} tickers: {missing}")
-
-        advances = declines = unchanged = 0
+            st.error(f"Failed to fetch {len(missing)} stocks: {', '.join(missing)}")
         
+        # 5. Calculation
+        advances = declines = unchanged = 0
         for symbol in downloaded:
+            # Use .get() or direct access safely
             close = data[symbol]["Close"].dropna()
             if len(close) < 2: continue
             
@@ -220,12 +225,16 @@ def get_nifty50_ad():
             
         ratio = round(advances / declines, 2) if declines > 0 else float(advances)
         
+        # 6. Display the metrics
+        st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}")
+        
+        # Always return 4 values
         return advances, declines, unchanged, ratio
 
     except Exception as e:
-        st.error(f"CRITICAL ERROR in get_nifty50_ad: {e}")
-        # Always return 4 values to prevent the unpacking error
-        return 0, 0, 0, 0.0 
+        st.error(f"Error in calculation: {e}")
+        # Return 0s to prevent line 485 from crashing
+        return 0, 0, 0, 0.0
 
 # -------
 # ---- test to display nifty 50 security values
