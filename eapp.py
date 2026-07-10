@@ -198,46 +198,34 @@ def fetch_positions():
 # new section
 @st.fragment(run_every="30s")
 def get_nifty50_ad():
-    # 1. Fetch the data
-    data = yf.download(
-        NIFTY50_SYMBOLS, 
-        period="2d", 
-        interval="1d", 
-        group_by="ticker", 
-        progress=False
-    )
-    
-    # 2. Identify which symbols were successfully downloaded
-    # We look at the top level of the MultiIndex columns
-    downloaded_symbols = data.columns.get_level_values(0).unique().tolist()
-    
-    # 3. CRITICAL DEBUG STEP: Find which ones are missing from the original list
-    missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded_symbols]
-    
-    if missing:
-        st.error(f"Missing {len(missing)} stocks from the 50 requested:")
-        st.write(missing) # This displays the list of 17 missing symbols
+    try:
+        data = yf.download(NIFTY50_SYMBOLS, period="2d", interval="1d", group_by="ticker", progress=False)
         
-    # 4. Perform calculations only on downloaded_symbols
-    advances = 0
-    declines = 0
-    unchanged = 0
-    
-    for symbol in downloaded_symbols:
-        close = data[symbol]["Close"].dropna()
-        if len(close) < 2:
-            continue
+        # Identify downloaded vs missing
+        downloaded = data.columns.get_level_values(0).unique().tolist()
+        missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
+        
+        if missing:
+            st.error(f"Missing {len(missing)} tickers: {missing}")
+
+        advances = declines = unchanged = 0
+        
+        for symbol in downloaded:
+            close = data[symbol]["Close"].dropna()
+            if len(close) < 2: continue
             
-        if close.iloc[-1] > close.iloc[-2]:
-            advances += 1
-        elif close.iloc[-1] < close.iloc[-2]:
-            declines += 1
-        else:
-            unchanged += 1
+            if close.iloc[-1] > close.iloc[-2]: advances += 1
+            elif close.iloc[-1] < close.iloc[-2]: declines += 1
+            else: unchanged += 1
             
-    st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}")
-    
-    return advances, declines, unchanged
+        ratio = round(advances / declines, 2) if declines > 0 else float(advances)
+        
+        return advances, declines, unchanged, ratio
+
+    except Exception as e:
+        st.error(f"CRITICAL ERROR in get_nifty50_ad: {e}")
+        # Always return 4 values to prevent the unpacking error
+        return 0, 0, 0, 0.0 
 
 # -------
 # ---- test to display nifty 50 security values
