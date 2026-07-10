@@ -196,13 +196,6 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
-import yfinance as yf
-import streamlit as st
-import datetime
-
-# --- YOUR SYMBOL LIST HERE ---
-NIFTY50_SYMBOLS = [...] 
-
 @st.fragment(run_every="10s")
 def get_nifty50_ad():
     c = st.container()
