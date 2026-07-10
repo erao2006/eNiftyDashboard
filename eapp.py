@@ -223,7 +223,9 @@ def get_nifty50_ad():
         for symbol in NIFTY50_SYMBOLS:
             try:
                 # Handle potential missing columns safely
-                if symbol not in data.columns.levels[0]: continue
+                if symbol not in data.columns.levels[0]:
+                    st.write(f"symbol: {symbol}") 
+                    continue
                 
                 close = data[symbol]["Close"].dropna()
                 if len(close) < 2: continue
