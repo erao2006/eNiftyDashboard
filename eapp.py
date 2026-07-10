@@ -196,39 +196,54 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
-@st.fragment(run_every="10s")
+@st.fragment(run_every="30s")
 def get_nifty50_ad():
-    # 1. Define the mandatory 4-value return
-    safe_return = (0, 0, 0, 0.0)
-    
     try:
-        data = yf.download(NIFTY_SYMBOLS, period="2d", group_by="ticker", progress=False)
+        # 1. Added a small delay to respect API rate limits
+        import time
+        time.sleep(1)
         
-        if data.empty:
-            return safe_return
-        
-        advances = 0
-        declines = 0
-        
-        for symbol in NIFTY_SYMBOLS:
-            if symbol in data:
-                df = data[symbol]
-                if len(df) >= 2:
-                    if df['Close'].iloc[-1] > df['Close'].iloc[-2]:
-                        advances += 1
-                    elif df['Close'].iloc[-1] < df['Close'].iloc[-2]:
-                        declines += 1
-        
-        # Calculate ratio safely
-        unchanged = len(NIFTY_SYMBOLS) - advances - declines
-        ratio = round(advances / declines, 2) if declines > 0 else float(advances)
-        
-        return advances, declines, unchanged, ratio
-        
-    except Exception:
-        # Always return 4 values even on error
-        return safe_return
+        data = yf.download(
+            NIFTY50_SYMBOLS,
+            period="2d",
+            interval="1d",
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            threads=True
+        )
 
+        # 2. Critical Safety: Verify data isn't empty before looping
+        if data.empty:
+            st.warning("Yahoo Finance returned no data. Check your symbol list or connection.")
+            return 0, 0, 50, 0.0
+
+        advances = declines = unchanged = 0
+        
+        for symbol in NIFTY50_SYMBOLS:
+            try:
+                # Handle potential missing columns safely
+                if symbol not in data.columns.levels[0]: continue
+                
+                close = data[symbol]["Close"].dropna()
+                if len(close) < 2: continue
+
+                if close.iloc[-1] > close.iloc[-2]: advances += 1
+                elif close.iloc[-1] < close.iloc[-2]: declines += 1
+                else: unchanged += 1
+
+            except Exception:
+                continue
+
+        total = advances + declines + unchanged
+        ratio = round(advances / declines, 2) if declines > 0 else float(advances)
+
+        st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}, Valid: {total}")
+        return advances, declines, unchanged, ratio
+
+    except Exception as e:
+        st.error(f"A/D Error: {e}")
+        return 0, 0, 50, 0.0
 
 # -------
 # ---- test to display nifty 50 security values
