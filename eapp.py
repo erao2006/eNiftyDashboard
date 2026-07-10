@@ -197,53 +197,63 @@ def fetch_positions():
 
 # new section
 @st.fragment(run_every="30s")
-def get_nifty50_ad(nifty50_symbols):
-    # Using Tickers object is more robust for multi-symbol requests
-    tickers = yf.Tickers(" ".join(nifty50_symbols))
-    
-    # download() on Tickers object handles the request properly
-    data = tickers.download(period="2d", interval="1d", group_by="ticker", progress=False)
-    
-    advances = 0
-    declines = 0
-    unchanged = 0
-    valid_stocks = 0
-    failed_stocks = []
+def get_nifty50_ad():
+    try:
+        # Reset errors from previous calls
+        shared._ERRORS = {}
+        
+        data = yf.download(
+            NIFTY50_SYMBOLS,
+            period="2d",
+            interval="1d",
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            threads=True
+        )
 
-    for symbol in nifty50_symbols:
-        # Check if the symbol exists in the downloaded data
-        if symbol in data.columns.levels[0]:
-            close_data = data[symbol]["Close"].dropna()
-            
-            if len(close_data) >= 2:
-                prev_close = close_data.iloc[-2]
-                curr_close = close_data.iloc[-1]
+        # Check if there were any failures
+        if shared._ERRORS:
+            failed_tickers = list(shared._ERRORS.keys())
+            st.warning(f"Failed to download: {', '.join(failed_tickers)}")
+
+        advances = 0
+        declines = 0
+        unchanged = 0
+        valid_count = 0
+
+        for symbol in NIFTY50_SYMBOLS:
+            # Skip if the symbol failed to download
+            if symbol in data.columns.levels[0]:
+                close = data[symbol]["Close"].dropna()
                 
+                if len(close) < 2:
+                    continue
+
+                prev_close = close.iloc[-2]
+                curr_close = close.iloc[-1]
+
                 if curr_close > prev_close:
                     advances += 1
                 elif curr_close < prev_close:
                     declines += 1
                 else:
                     unchanged += 1
-                valid_stocks += 1
-            else:
-                failed_stocks.append(f"{symbol} (insufficient data)")
-        else:
-            failed_stocks.append(symbol)
-    
-    # Display the failures so you know exactly what is missing
-    if failed_stocks:
-        st.warning(f"Failed/Missing {len(failed_stocks)} stocks: {', '.join(failed_stocks)}")
-        
-    ratio = round(advances / declines, 2) if declines > 0 else float(advances)
-    
-    st.write(f"Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}, Valid Stocks: {valid_stocks}")
-    
-    return advances, declines, unchanged, ratio
+                valid_count += 1
 
-#    except Exception as e:
-#        st.error(f"A/D Error: {e}")
-#        return 0, 0, 0, 0.0
+        ratio = round(advances / declines, 2) if declines else float(advances)
+
+        st.write(
+            f"Advances: {advances}, Declines: {declines}, "
+            f"Unchanged: {unchanged}, Valid Stocks: {valid_count}"
+        )
+
+        return advances, declines, unchanged, ratio
+
+    except Exception as e:
+        st.error(f"A/D Error: {e}")
+        return 0, 0, 0, 0.0
+
 # -------
 # ---- test to display nifty 50 security values
 
