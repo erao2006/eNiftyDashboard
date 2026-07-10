@@ -197,9 +197,6 @@ def fetch_positions():
 
 # new section
 @st.fragment(run_every="30s")
-import yfinance as yf
-import streamlit as st
-
 def get_nifty50_ad(nifty50_symbols):
     # Using Tickers object is more robust for multi-symbol requests
     tickers = yf.Tickers(" ".join(nifty50_symbols))
