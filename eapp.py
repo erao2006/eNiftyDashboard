@@ -199,9 +199,6 @@ def fetch_positions():
 @st.fragment(run_every="30s")
 def get_nifty50_ad():
     try:
-        # Reset errors from previous calls
-        shared._ERRORS = {}
-        
         data = yf.download(
             NIFTY50_SYMBOLS,
             period="2d",
@@ -212,34 +209,39 @@ def get_nifty50_ad():
             threads=True
         )
 
-        # Check if there were any failures
-        if shared._ERRORS:
-            failed_tickers = list(shared._ERRORS.keys())
-            st.warning(f"Failed to download: {', '.join(failed_tickers)}")
+        # 1. Identify which symbols are actually in the data
+        # data.columns.levels[0] contains the tickers that were successfully downloaded
+        downloaded_symbols = data.columns.levels[0].tolist()
+        
+        # 2. Find the missing ones by set difference
+        missing_symbols = [s for s in NIFTY50_SYMBOLS if s not in downloaded_symbols]
+        
+        # 3. Display the missing list
+        if missing_symbols:
+            st.warning(f"Missing data for: {', '.join(missing_symbols)}")
 
         advances = 0
         declines = 0
         unchanged = 0
         valid_count = 0
 
-        for symbol in NIFTY50_SYMBOLS:
-            # Skip if the symbol failed to download
-            if symbol in data.columns.levels[0]:
-                close = data[symbol]["Close"].dropna()
-                
-                if len(close) < 2:
-                    continue
+        # 4. Iterate only through the symbols that exist in the downloaded data
+        for symbol in downloaded_symbols:
+            close = data[symbol]["Close"].dropna()
+            
+            if len(close) < 2:
+                continue
 
-                prev_close = close.iloc[-2]
-                curr_close = close.iloc[-1]
+            prev_close = close.iloc[-2]
+            curr_close = close.iloc[-1]
 
-                if curr_close > prev_close:
-                    advances += 1
-                elif curr_close < prev_close:
-                    declines += 1
-                else:
-                    unchanged += 1
-                valid_count += 1
+            if curr_close > prev_close:
+                advances += 1
+            elif curr_close < prev_close:
+                declines += 1
+            else:
+                unchanged += 1
+            valid_count += 1
 
         ratio = round(advances / declines, 2) if declines else float(advances)
 
