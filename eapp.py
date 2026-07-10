@@ -201,7 +201,14 @@ def get_nifty50_ad():
     # Always define this so it can be returned on failure
     safe_return = (0, 0, 0, 0.0)
     c = st.container()
-    
+    # Place this inside get_nifty50_ad() after the download line
+    downloaded = data.columns.get_level_values(0).unique().tolist()
+    missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
+
+    if missing:
+        with st.expander("Click to see missing tickers"):
+            st.write(missing)
+
     try:
         # Validate list
         if any(not isinstance(s, str) for s in NIFTY50_SYMBOLS):
