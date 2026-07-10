@@ -198,29 +198,42 @@ def fetch_positions():
 # new section
 @st.fragment(run_every="10s")
 def get_nifty50_ad():
+    # Always define this so it can be returned on failure
+    safe_return = (0, 0, 0, 0.0)
     c = st.container()
     
     try:
-        # Download data
+        # Validate list
+        if any(not isinstance(s, str) for s in NIFTY50_SYMBOLS):
+            c.error("Error: NIFTY50_SYMBOLS contains non-string items (check for '...')")
+            return safe_return
+
         data = yf.download(NIFTY50_SYMBOLS, period="2d", interval="1d", group_by="ticker", progress=False)
         
-        # Get successfully returned tickers
+        if data.empty or "Close" not in data.columns:
+            c.warning("No data retrieved.")
+            return safe_return
+
         downloaded = data.columns.get_level_values(0).unique().tolist()
         
-        # Calculate missing
-        missing = [s for s in NIFTY50_SYMBOLS if s not in downloaded]
-        
-        # --- DISPLAY DIAGNOSTIC ---
-        if missing:
-            c.error(f"Missing {len(missing)} stocks. These tickers are invalid on Yahoo Finance:")
-            c.write(missing) # THIS LIST IS THE ANSWER
-        
-        # Calculation ...
-        # (rest of your logic)
+        advances = declines = unchanged = 0
+        for symbol in downloaded:
+            close = data[symbol]["Close"].dropna()
+            if len(close) < 2: continue
             
+            if close.iloc[-1] > close.iloc[-2]: advances += 1
+            elif close.iloc[-1] < close.iloc[-2]: declines += 1
+            else: unchanged += 1
+            
+        ratio = round(advances / declines, 2) if declines > 0 else float(advances)
+        
+        c.write(f"Advances: {advances}, Declines: {declines}, Valid: {len(downloaded)}")
+        return advances, declines, unchanged, ratio
+
     except Exception as e:
         c.error(f"Error: {e}")
-        return 0, 0, 0, 0.0
+        return safe_return
+
 
 # -------
 # ---- test to display nifty 50 security values
