@@ -1,6 +1,5 @@
 import pandas as pd
 import streamlit as st
-import yfinance as yf
 import requests
 import io
 from dhanhq import dhanhq, DhanContext
@@ -9,7 +8,6 @@ import logging
 from streamlit_autorefresh import st_autorefresh
 import pytz
 from datetime import datetime
-import yfinance.shared as shared # Import shared to access errors
 
 ist_zone = ZoneInfo("Asia/Kolkata")
 current_time = datetime.now(ist_zone).strftime("%d-%b-%Y %H:%M:%S IST")
@@ -64,6 +62,9 @@ st.set_page_config(page_title="Dhan Monitor & Portfolio", layout="centered")
 # --------------------------
 def is_market_open():
     # Define the timezone
+    import yfinance as yf
+    import yfinance.shared as shared
+    
     ist = pytz.timezone('Asia/Kolkata')
     
     # Get current time and immediately localize it to IST
