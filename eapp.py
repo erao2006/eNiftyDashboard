@@ -110,7 +110,7 @@ except Exception as init_err:
 # 3. Stable Market Engine (With Percentage Logic)
 # ----------------------------------------------------
 @st.cache_data(ttl=5)
-@st.fragment
+@st.fragment()
 #@st.fragment(run_every="30s")
 def fetch_market_snapshot():
     # 1. Initialize master_data with all required keys
@@ -157,7 +157,7 @@ def fetch_market_snapshot():
         
     return master_data
 
-@st.fragment
+@st.fragment()
 def fetch_orders():
     try:
         response = dhan.get_order_list()
@@ -175,7 +175,7 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
-@st.fragment
+@st.fragment()
 def fetch_positions():
     try:
         response = dhan.get_positions()
@@ -197,7 +197,7 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
-@st.fragment
+@st.fragment()
 def get_nifty50_ad():
     try:
         # 1. Added a small delay to respect API rate limits
