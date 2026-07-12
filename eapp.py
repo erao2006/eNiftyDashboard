@@ -276,39 +276,7 @@ def get_nifty50_ad():
 # ----------------------------------------------------
 # 2. Data Engine
 # ----------------------------------------------------
-"""
-@st.cache_data(ttl=86400)
-def load_security_ids():
-    url = "https://images.dhan.co/api-data/api-scrip-master-detailed.csv"
-    response = requests.get(url)
-    df = pd.read_csv(io.StringIO(response.text), low_memory=False)
-    # Filter for NSE Equity
-    df = df[(df["EXCH_ID"] == "NSE") & (df["SEGMENT"] == "E")]
-    mapping = {}
-    for sym in NIFTY50_SYMBOLS:
-        row = df[df["SYMBOL_NAME"] == sym]
-        if not row.empty:
-            mapping[sym] = str(row.iloc[0]["SECURITY_ID"])
-    return mapping
 
-@st.cache_data(ttl=5)
-def get_dhan_breadth():
-    mapping = load_security_ids()
-    try:
-        quotes = dhan.ohlc_data(securities={"NSE_EQ": list(mapping.values())})
-        if quotes.get("status") == "success":
-            data = quotes["data"]["NSE_EQ"]
-            adv = dec = unc = 0
-            for sec_id in data:
-                ltp = data[sec_id]["last_price"]
-                prev = data[sec_id]["ohlc"]["close"]
-                if ltp > prev: adv += 1
-                elif ltp < prev: dec += 1
-                else: unc += 1
-            return adv, dec, unc
-    except: pass
-    return 0, 0, 50
-"""
 # ----------------------------------------------------
 # 3. Main Dashboard UI
 # ----------------------------------------------------
