@@ -110,7 +110,7 @@ except Exception as init_err:
 # 3. Stable Market Engine (With Percentage Logic)
 # ----------------------------------------------------
 @st.cache_data(ttl=5)
-@st.fragment()
+#@st.fragment()
 #@st.fragment(run_every="30s")
 def fetch_market_snapshot():
     # 1. Initialize master_data with all required keys
@@ -157,7 +157,7 @@ def fetch_market_snapshot():
         
     return master_data
 
-@st.fragment()
+#@st.fragment()
 def fetch_orders():
     try:
         response = dhan.get_order_list()
@@ -175,7 +175,7 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
-@st.fragment()
+#@st.fragment()
 def fetch_positions():
     try:
         response = dhan.get_positions()
@@ -197,7 +197,7 @@ def fetch_positions():
     return pd.DataFrame(columns=['tradingSymbol', 'positionType', 'netQty', 'buyAvg', 'sellAvg', 'realizedProfit', 'unrealizedProfit'])
 
 # new section
-@st.fragment()
+#@st.fragment()
 def get_nifty50_ad():
     try:
         # 1. Added a small delay to respect API rate limits
@@ -274,30 +274,7 @@ def get_nifty50_ad():
 #    "TITAN", "TRENT", "ULTRACEMCO", "WIPRO" ]
 
 # ----------------------------------------------------
-# 2. Data Engine
-# ----------------------------------------------------
 
-# ----------------------------------------------------
-# 3. Main Dashboard UI
-# ----------------------------------------------------
-# st.title("📊 Live Market Terminal")
-
-# Fetch Data
-# adv, dec, unc = get_dhan_breadth()
-
-# Metrics
-# st.markdown("### 📈 NIFTY 50 Advance / Decline")
-# c1, c2, c3, c4 = st.columns(4)
-# c1.metric("🟢 Adv", adv)
-# c2.metric("🔴 Dec", dec)
-# c3.metric("⚪ Unch", unc)
-# c4.metric("📊 Ratio", round(adv/dec, 2) if dec > 0 else adv)
-
-# P&L and other logic (Keep your original CSS and dataframe blocks below)
-# st.caption(f"Last Updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
-# Sync Footer
-
-# ---- test ends ----
 
 # Execute Network Engine Operations
 st.markdown("### 📡 API Connection Logs")
