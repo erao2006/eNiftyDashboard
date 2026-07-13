@@ -2,6 +2,8 @@ import pandas as pd
 import streamlit as st
 import requests
 import io
+import yfinance as yf
+import yfinance.shared as shared
 from dhanhq import dhanhq, DhanContext
 from zoneinfo import ZoneInfo
 import logging
@@ -62,8 +64,6 @@ st.set_page_config(page_title="Dhan Monitor & Portfolio", layout="centered")
 # --------------------------
 def is_market_open():
     # Define the timezone
-    import yfinance as yf
-    import yfinance.shared as shared
     
     ist = pytz.timezone('Asia/Kolkata')
     
