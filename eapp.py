@@ -77,7 +77,7 @@ def is_market_open():
     
     # Create start and end time objects for the current day in IST
     start_time = now.replace(hour=4, minute=55, second=0, microsecond=0)
-    end_time = now.replace(hour=15, minute=35, second=0, microsecond=0)
+    end_time = now.replace(hour=22, minute=35, second=0, microsecond=0)
     
     return start_time <= now <= end_time
 
@@ -202,8 +202,8 @@ def fetch_positions():
 def get_nifty50_ad():
     try:
         # 1. Added a small delay to respect API rate limits
-        import time
-        time.sleep(1)
+        #import time
+        #time.sleep(1)
         
         data = yf.download(
             NIFTY50_SYMBOLS,
