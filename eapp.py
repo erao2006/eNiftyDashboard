@@ -110,7 +110,7 @@ except Exception as init_err:
 # ----------------------------------------------------
 # 3. Stable Market Engine (With Percentage Logic)
 # ----------------------------------------------------
-@st.cache_data(ttl=5)
+#@st.cache_data(ttl=5)
 #@st.fragment()
 #@st.fragment(run_every="30s")
 def fetch_market_snapshot():
