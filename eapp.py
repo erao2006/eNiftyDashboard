@@ -486,7 +486,8 @@ if st.button("Fetch Option Chain"):
             under_exchange_segment="IDX_I", # Use 'IDX_I' for Indices
             expiry=expiry_date
         )
-        
+        # DEBUG: Print the whole response to Streamlit to see what it contains
+        st.write("Full API Response:", response)
         # 4. Transform Data
         # Replace your existing loop with this:
         #oc_data = response['data'] # Access the data key correctly
