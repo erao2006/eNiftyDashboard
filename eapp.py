@@ -77,7 +77,7 @@ def is_market_open():
     
     # Create start and end time objects for the current day in IST
     start_time = now.replace(hour=8, minute=55, second=0, microsecond=0)
-    end_time = now.replace(hour=15, minute=35, second=0, microsecond=0)
+    end_time = now.replace(hour=23, minute=35, second=0, microsecond=0)
     
     return start_time <= now <= end_time
 
@@ -470,4 +470,46 @@ st.table(df_ad.style.hide(axis="index"))
 
 # st.caption(f"Updated: {datetime.datetime.now().strftime('%d-%b-%Y %I:%M:%S %p')}")
 # ------
+
+# 1. Configuration: Use Streamlit secrets for credentials
+client_id = st.secrets["DHAN_CLIENT_ID"]
+access_token = st.secrets["DHAN_ACCESS_TOKEN"]
+dhan = dhanhq(client_id, access_token)
+
+st.title("DhanHQ Option Chain Tracker")
+
+# 2. Input Fields
+security_id = st.text_input("Enter Underlying Security ID (e.g., 13 for Nifty)", "13")
+expiry_date = st.text_input("Enter Expiry Date (YYYY-MM-DD)", "2026-07-30")
+
+if st.button("Fetch Option Chain"):
+    try:
+        # 3. Fetch Data
+        response = dhan.option_chain(
+            under_security_id=int(security_id),
+            under_exchange_segment="IDX_I", # Use 'IDX_I' for Indices
+            expiry=expiry_date
+        )
+        
+        # 4. Transform Data
+        oc_data = response['data']['oc']
+        rows = []
+        for strike, data in oc_data.items():
+            rows.append({
+                "Strike": float(strike),
+                "CE_OI": data['ce']['oi'],
+                "CE_Chng_OI": data['ce']['oi'] - data['ce']['previous_oi'],
+                "PE_OI": data['pe']['oi'],
+                "PE_Chng_OI": data['pe']['oi'] - data['pe']['previous_oi']
+            })
+        
+        df = pd.DataFrame(rows).sort_values("Strike")
+        
+        # 5. Display in Streamlit
+        st.dataframe(df)
+        
+    except Exception as e:
+        st.error(f"Error fetching data: {e}")
+
+
 
