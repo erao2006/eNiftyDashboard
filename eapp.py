@@ -81,8 +81,8 @@ def is_market_open():
     
     return start_time <= now <= end_time
 
-# Refresh every 15 seconds
-st_autorefresh(interval=15000, key="market_refresh")
+# Refresh every 10 seconds
+st_autorefresh(interval=10000, key="market_refresh")
 
 # --- Early Exit Logic ---
 if not is_market_open():
