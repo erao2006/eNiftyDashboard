@@ -479,13 +479,26 @@ security_id = st.text_input("Enter Underlying Security ID (e.g., 13 for Nifty)",
 expiry_date = st.text_input("Enter Expiry Date (YYYY-MM-DD)", "2026-07-30")
 
 if st.button("Fetch Option Chain"):
-    try:
-        # 3. Fetch Data
-        response = dhan.option_chain(
-            under_security_id=int(security_id),
-            under_exchange_segment="IDX_I", # Use 'IDX_I' for Indices
-            expiry=expiry_date
-        )
+    # Change here: Try using symbol="NIFTY" if security_id=13 fails
+    response = dhan.option_chain(
+        symbol="NIFTY", 
+        exchange_segment="IDX_I", 
+        expiry=expiry_date
+    )
+    
+    # Check the status before doing anything else
+    if response.get("status") == "success":
+        data = response.get("data", [])
+        if data:
+            # Process your data here...
+            st.success("Data fetched successfully!")
+            st.write(data)
+        else:
+            st.warning("Request succeeded but no data was returned.")
+    else:
+        # This will show you the exact error from Dhan
+        st.error(f"API Failed: {response}")
+
         # DEBUG: Print the whole response to Streamlit to see what it contains
         st.write("Full API Response:", response)
         # 4. Transform Data
