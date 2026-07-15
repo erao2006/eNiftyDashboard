@@ -513,11 +513,13 @@ if st.button("Fetch Option Chain"):
         except Exception as e:
             st.error(f"Mapping error: {e}. Check the debug sample above to see the correct key names.")
 
-
-# 1. Add this to see exactly what the API returns
-#st.write("Debug: API Response Data Sample", response['data'][:1]) 
-
-# 2. Use a loop that prints the available keys 
+        df = pd.DataFrame(rows).sort_values("Strike")
+        
+        # 5. Display in Streamlit
+        st.dataframe(df)
+        
+    except Exception as e:
+        st.error(f"Error fetching data: {e}")
 
 
 
