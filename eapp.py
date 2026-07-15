@@ -480,36 +480,24 @@ expiry_date = st.text_input("Enter Expiry Date (YYYY-MM-DD)", "2026-07-30")
 
 if st.button("Fetch Option Chain"):
     # Change here: Try using symbol="NIFTY" if security_id=13 fails
-    # Use the correct segment and numeric ID
-# For Nifty, the security_id is typically 13, but the segment must be 'NSE_FNO'
-    response = dhan.option_chain(
-        security_id="13", 
-        exchange_segment="NSE_FNO" 
-    )
-
-    
-    # Check the status before doing anything else
-    if response.get("status") == "success":
-        data = response.get("data", [])
-        if data:
-            # Process your data here...
-            st.success("Data fetched successfully!")
-            st.write(data)
-        else:
-            st.warning("Request succeeded but no data was returned.")
-    else:
-        # This will show you the exact error from Dhan
-        st.error(f"API Failed: {response}")
-
-        # DEBUG: Print the whole response to Streamlit to see what it contains
-        st.write("Full API Response:", response)
-        # 4. Transform Data
-        # Replace your existing loop with this:
-        #oc_data = response['data'] # Access the data key correctly
+    # Use the exact parameter names expected by the library
+    try:
+        response = dhan.option_chain(
+            under_security_id=13, 
+            under_exchange_segment="IDX_I"
+        )
         
-        # Depending on the exact API output, you might need to iterate 
-        # through a list of strike objects:
-        # 1. Add this to see exactly what the API returns
-        st.write("Debug: API Response Data Sample", response['data'][:1]) 
-
-
+        # Check if the response is successful
+        if response.get("status") == "success":
+            # The data is inside the 'data' key, often structured as 'oc' (Option Chain)
+            st.success("Successfully fetched Option Chain!")
+            # Access the option chain dictionary
+            oc_data = response.get("data", {}).get("oc", {})
+            st.write(oc_data)
+        else:
+            st.error(f"API returned failure: {response.get('remarks')}")
+            
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+    
+    
