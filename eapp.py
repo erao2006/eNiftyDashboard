@@ -82,7 +82,7 @@ def is_market_open():
     return start_time <= now <= end_time
 
 # Refresh every 10 seconds
-st_autorefresh(interval=60000, key="market_refresh")
+st_autorefresh(interval=20000, key="market_refresh")
 
 # --- Early Exit Logic ---
 if not is_market_open():
@@ -509,7 +509,7 @@ if st.button("Fetch Option Chain"):
         # through a list of strike objects:
         # 1. Add this to see exactly what the API returns
         st.write("Debug: API Response Data Sample", response['data'][:1]) 
-
+'''
         # 2. Use a loop that prints the available keys if it fails
         try:
             rows = []
@@ -534,6 +534,6 @@ if st.button("Fetch Option Chain"):
         
     except Exception as e:
         st.error(f"Error fetching data: {e}")
-
+'''
 
 
