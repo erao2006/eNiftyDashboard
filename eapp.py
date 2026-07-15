@@ -483,9 +483,11 @@ if st.button("Fetch Option Chain"):
     # Use the exact parameter names expected by the library
     try:
         response = dhan.option_chain(
-            under_security_id=13, 
-            under_exchange_segment="IDX_I"
+            under_security_id=13,
+            under_exchange_segment="IDX_I",
+            expiry="2026-07-20" # This third argument is required
         )
+
         
         # Check if the response is successful
         if response.get("status") == "success":
