@@ -82,7 +82,7 @@ def is_market_open():
     return start_time <= now <= end_time
 
 # Refresh every 10 seconds
-st_autorefresh(interval=10000, key="market_refresh")
+st_autorefresh(interval=60000, key="market_refresh")
 
 # --- Early Exit Logic ---
 if not is_market_open():
@@ -489,27 +489,35 @@ if st.button("Fetch Option Chain"):
         
         # 4. Transform Data
         # Replace your existing loop with this:
-        oc_data = response['data'] # Access the data key correctly
+        #oc_data = response['data'] # Access the data key correctly
         
         # Depending on the exact API output, you might need to iterate 
         # through a list of strike objects:
-        rows = []
-        for item in oc_data: 
-            rows.append({
-                "Strike": float(item['strike']),
-                "CE_OI": item['ce']['openInterest'],
-                "CE_Chng_OI": item['ce']['changeInOpenInterest'],
-                "PE_OI": item['pe']['openInterest'],
-                "PE_Chng_OI": item['pe']['changeInOpenInterest']
-            })
-        
-        df = pd.DataFrame(rows).sort_values("Strike")
-        
-        # 5. Display in Streamlit
-        st.dataframe(df)
-        
-    except Exception as e:
-        st.error(f"Error fetching data: {e}")
+        # 1. Add this to see exactly what the API returns
+        st.write("Debug: API Response Data Sample", response['data'][:1]) 
+
+        # 2. Use a loop that prints the available keys if it fails
+        try:
+            rows = []
+            for item in response['data']:
+                # Inspect an 'item' to find the exact keys if this fails
+                rows.append({
+                    "Strike": item.get('strikePrice'), # Try strikePrice
+                    "CE_OI": item.get('ce', {}).get('openInterest'),
+                    "CE_Chng_OI": item.get('ce', {}).get('changeInOpenInterest'),
+                    "PE_OI": item.get('pe', {}).get('openInterest'),
+                    "PE_Chng_OI": item.get('pe', {}).get('changeInOpenInterest')
+                })
+            df = pd.DataFrame(rows)
+            st.dataframe(df)
+        except Exception as e:
+            st.error(f"Mapping error: {e}. Check the debug sample above to see the correct key names.")
+
+
+# 1. Add this to see exactly what the API returns
+st.write("Debug: API Response Data Sample", response['data'][:1]) 
+
+# 2. Use a loop that prints the available keys 
 
 
 
