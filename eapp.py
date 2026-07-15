@@ -515,7 +515,7 @@ if st.button("Fetch Option Chain"):
 
 
 # 1. Add this to see exactly what the API returns
-st.write("Debug: API Response Data Sample", response['data'][:1]) 
+#st.write("Debug: API Response Data Sample", response['data'][:1]) 
 
 # 2. Use a loop that prints the available keys 
 
