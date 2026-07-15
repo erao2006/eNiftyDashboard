@@ -472,10 +472,6 @@ st.table(df_ad.style.hide(axis="index"))
 # ------
 
 # 1. Configuration: Use Streamlit secrets for credentials
-client_id = st.secrets["DHAN_CLIENT_ID"]
-access_token = st.secrets["DHAN_ACCESS_TOKEN"]
-dhan = dhanhq(client_id, access_token)
-
 st.title("DhanHQ Option Chain Tracker")
 
 # 2. Input Fields
