@@ -488,15 +488,19 @@ if st.button("Fetch Option Chain"):
         )
         
         # 4. Transform Data
-        oc_data = response['data']['oc']
+        # Replace your existing loop with this:
+        oc_data = response['data'] # Access the data key correctly
+        
+        # Depending on the exact API output, you might need to iterate 
+        # through a list of strike objects:
         rows = []
-        for strike, data in oc_data.items():
+        for item in oc_data: 
             rows.append({
-                "Strike": float(strike),
-                "CE_OI": data['ce']['oi'],
-                "CE_Chng_OI": data['ce']['oi'] - data['ce']['previous_oi'],
-                "PE_OI": data['pe']['oi'],
-                "PE_Chng_OI": data['pe']['oi'] - data['pe']['previous_oi']
+                "Strike": float(item['strike']),
+                "CE_OI": item['ce']['openInterest'],
+                "CE_Chng_OI": item['ce']['changeInOpenInterest'],
+                "PE_OI": item['pe']['openInterest'],
+                "PE_Chng_OI": item['pe']['changeInOpenInterest']
             })
         
         df = pd.DataFrame(rows).sort_values("Strike")
