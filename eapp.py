@@ -480,11 +480,13 @@ expiry_date = st.text_input("Enter Expiry Date (YYYY-MM-DD)", "2026-07-30")
 
 if st.button("Fetch Option Chain"):
     # Change here: Try using symbol="NIFTY" if security_id=13 fails
+    # Use the correct segment and numeric ID
+# For Nifty, the security_id is typically 13, but the segment must be 'NSE_FNO'
     response = dhan.option_chain(
-        symbol="NIFTY", 
-        exchange_segment="IDX_I", 
-        expiry=expiry_date
+        security_id="13", 
+        exchange_segment="NSE_FNO" 
     )
+
     
     # Check the status before doing anything else
     if response.get("status") == "success":
