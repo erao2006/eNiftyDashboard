@@ -493,7 +493,7 @@ if st.button("Fetch Option Chain"):
         response = dhan.option_chain(
             under_security_id="26000",        # Use the specific Security ID as a string
             under_exchange_segment="IDX_I",   # Use the segment code from your documentation
-            expiry="2026-02-27"               # Use the key 'expiry' exactly
+            expiry="2026-07-29"               # Use the key 'expiry' exactly
         )
 
 
