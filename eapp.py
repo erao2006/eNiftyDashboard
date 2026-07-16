@@ -176,24 +176,31 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
+import requests
+import pandas as pd
+import streamlit as st
+
 def fetch_super_orders():
+    url = "https://api.dhan.co/v2/super/orders"
+    headers = {
+        "access-token": "YOUR_ACCESS_TOKEN",  # Replace with your actual token
+        "Content-Type": "application/json"
+    }
+    
     try:
-        # The official SDK method for Super Orders
-        response = dhan.get_super_orders()
-        
-        # Dhan returns a list of orders directly
-        if isinstance(response, list) and len(response) > 0:
-            df = pd.DataFrame(response)
-            # Adjust column names as needed for your UI
-            columns_to_keep = ['orderId', 'tradingSymbol', 'transactionType', 'orderStatus', 'price', 'targetPrice', 'stopLossPrice']
-            available_cols = [col for col in columns_to_keep if col in df.columns]
-            return df[available_cols]
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            # Returns a list of super orders
+            if isinstance(data, list) and len(data) > 0:
+                return pd.DataFrame(data)
+            return pd.DataFrame()
         else:
+            st.error(f"🔴 API Error: {response.status_code}")
             return pd.DataFrame()
     except Exception as e:
-        st.error(f"🔴 Dhan Super Orders API Failed: {e}")
+        st.error(f"🔴 Connection Error: {e}")
         return pd.DataFrame()
-
 
 #@st.fragment()
 def fetch_positions():
