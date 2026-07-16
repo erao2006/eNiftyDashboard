@@ -77,12 +77,12 @@ def is_market_open():
     
     # Create start and end time objects for the current day in IST
     start_time = now.replace(hour=8, minute=55, second=0, microsecond=0)
-    end_time = now.replace(hour=15, minute=35, second=0, microsecond=0)
+    end_time = now.replace(hour=23, minute=35, second=0, microsecond=0)
     
     return start_time <= now <= end_time
 
 # Refresh every 10 seconds
-st_autorefresh(interval=10000, key="market_refresh")
+st_autorefresh(interval=30000, key="market_refresh")
 
 # --- Early Exit Logic ---
 if not is_market_open():
