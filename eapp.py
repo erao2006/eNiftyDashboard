@@ -486,15 +486,16 @@ if st.button("Fetch Option Chain"):
         #import inspect
         #st.write(inspect.signature(dhan.get_option_chain))
         # Print all available methods in your 'dhan' object
-        st.write([method for method in dir(dhan) if not method.startswith('_')])
+        # st.write([method for method in dir(dhan) if not method.startswith('_')])
 
-        # The official method name is 'get_option_chain'
-        # Note the parameter names below:
-        response = dhan.get_option_chain(
-            underlying_security_id="26000",
-            underlying_type="INDEX",
-            expiry_date="2026-07-21"      # Must be 'expiry_date'
+        # Use the correct method name: 'option_chain'
+        # Note the parameter names exactly as they are defined in the SDK
+        response = dhan.option_chain(
+            under_security_id="26000",        # Use the specific Security ID as a string
+            under_exchange_segment="IDX_I",   # Use the segment code from your documentation
+            expiry="2026-02-27"               # Use the key 'expiry' exactly
         )
+
 
         
         # Check if the response is successful
