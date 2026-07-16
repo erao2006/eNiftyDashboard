@@ -484,12 +484,14 @@ if st.button("Fetch Option Chain"):
     try:
         # Assuming 'dhan' is your initialized dhanhq client
         import inspect
-        st.write(inspect.signature(dhan.option_chain))
+        st.write(inspect.signature(dhan.get_option_chain))
 
-        response = dhan.option_chain(
-            security_id="13",             # Replace with the specific Security ID of the Index
-            exchange_segment="INDEX",       # As per your first screenshot for Index
-            expiry_date="2026-07-21"        # Ensure the date format is YYYY-MM-DD
+        # The official method name is 'get_option_chain'
+        # Note the parameter names below:
+        response = dhan.get_option_chain(
+            underlying_security_id="13",  # Must be 'underlying_security_id'
+            underlying_type="INDEX",      # Must be 'underlying_type' (e.g., "INDEX" or "EQUITY")
+            expiry_date="2026-07-20"      # Must be 'expiry_date'
         )
 
         
