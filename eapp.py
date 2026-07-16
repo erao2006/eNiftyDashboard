@@ -113,6 +113,7 @@ st.markdown("---")
 # --- Logic ---
 if not is_market_open():
     st.info("Market is currently closed. Updates are paused.")
+    st.stop()
     # We don't use st.stop() here so the user can still see 
     # historical data or the last fetched state if they want.
 else:
