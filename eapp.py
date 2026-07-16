@@ -488,8 +488,8 @@ if st.button("Fetch Option Chain"):
         # Print all available methods in your 'dhan' object
         # st.write([method for method in dir(dhan) if not method.startswith('_')])
         security_id = "26000"
-        segment = "IDX_I"
-        expiries = dhan.expiry_list(security_id=security_id, exchange_segment=segment)
+        segment = "INDEX"
+        expiries = dhan.get_expiry_list(underlying_security_id=security_id, underlying_type=segment)
         print("Available Expiries:", expiries)
         
         # Select the first available expiry from the list
