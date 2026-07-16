@@ -482,10 +482,12 @@ if st.button("Fetch Option Chain"):
     # Change here: Try using symbol="NIFTY" if security_id=13 fails
     # Use the exact parameter names expected by the library
     try:
+        # Assuming 'dhan' is your initialized dhanhq client
+
         response = dhan.option_chain(
-            under_security_id=2,
-            under_exchange_segment="INDEX",
-            expiry="2026-07-21" # This third argument is required
+            security_id="26000",             # Replace with the specific Security ID of the Index
+            exchange_segment="IDX_I",       # As per your first screenshot for Index
+            expiry_date="2026-07-21"        # Ensure the date format is YYYY-MM-DD
         )
 
         
