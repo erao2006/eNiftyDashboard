@@ -176,6 +176,29 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
+def fetch_forever_orders():
+    try:
+        # Assuming 'dhan' is your initialized Dhan object
+        response = dhan.get_forever_orders() 
+        
+        if isinstance(response, dict) and response.get("status") == "success":
+            st.success("🟢 Dhan Forever Orders API successful: 200 OK")
+            orders = response.get("data", []) if response.get("data") else []
+            df = pd.DataFrame(orders)
+            
+            # Adjust column names based on the response structure of Forever Orders
+            columns_to_keep = ['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus']
+            available_cols = [col for col in columns_to_keep if col in df.columns]
+            return df[available_cols]
+        else:
+            remark = response.get("remarks") if isinstance(response, dict) else "Could not fetch Forever Orders"
+            st.error(f"🔴 Dhan Forever Orders API Failed: {remark}")
+    except Exception as e:
+        st.error(f"🔴 Dhan Forever Orders API Failed: 500 Connection Error | {e}")
+        
+    return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
+
+
 #@st.fragment()
 def fetch_positions():
     try:
@@ -445,6 +468,16 @@ if not orders_df.empty:
     st.dataframe(orders_df, width='stretch', hide_index=True)
 else:
     st.info("No orders processed today.")
+
+# --- Super Orders (Forever Orders) ---
+st.markdown("### ♾️ Super Orders (Forever)")
+forever_orders_df = fetch_forever_orders() # Ensure you have this function defined
+
+if not forever_orders_df.empty:
+    st.dataframe(forever_orders_df, width='stretch', hide_index=True)
+else:
+    st.info("No active super orders found.")
+
 
 # ------- new section
 # -------- NIFTY 50 ADVANCE / DECLINE --------
