@@ -82,12 +82,29 @@ def is_market_open():
     return start_time <= now <= end_time
 
 # Refresh every 10 seconds
-st_autorefresh(interval=10000, key="market_refresh")
+#st_autorefresh(interval=10000, key="market_refresh")
 
 # --- Early Exit Logic ---
+##if not is_market_open():
+#    st.info("Market is currently closed. Updates are paused.")
+#    st.stop()  # Everything below this line will not execute when market is closed
+
+# --- Refresh UI ---
+# Place the refresh button at the top of the sidebar or main page
+if st.button("🔄 Refresh Market Data"):
+    st.rerun()  # Forces the script to run again to fetch fresh data
+
+st.markdown("---")
+
+# --- Logic ---
 if not is_market_open():
     st.info("Market is currently closed. Updates are paused.")
-    st.stop()  # Everything below this line will not execute when market is closed
+    # We don't use st.stop() here so the user can still see 
+    # historical data or the last fetched state if they want.
+else:
+    # This block only runs when the market is open
+    st.success("Market is open. Click 'Refresh' to update data.")
+    
 
 # ----------------------------------------------------
 # 2. Authentication Setup via Secrets
