@@ -483,6 +483,8 @@ if st.button("Fetch Option Chain"):
     # Use the exact parameter names expected by the library
     try:
         # Assuming 'dhan' is your initialized dhanhq client
+        import inspect
+        st.write(inspect.signature(dhan.option_chain))
 
         response = dhan.option_chain(
             security_id=26000,             # Replace with the specific Security ID of the Index
