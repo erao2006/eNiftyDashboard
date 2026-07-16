@@ -488,6 +488,23 @@ if st.button("Fetch Option Chain"):
         # Print all available methods in your 'dhan' object
         # st.write([method for method in dir(dhan) if not method.startswith('_')])
 
+        expiries = dhan.expiry_list(security_id=security_id, exchange_segment=segment)
+        print("Available Expiries:", expiries)
+        
+        # Select the first available expiry from the list
+        if expiries and len(expiries) > 0:
+            target_expiry = expiries[0] 
+            
+            # 3. Fetch the Option Chain
+            response = dhan.option_chain(
+                under_security_id=security_id,
+                under_exchange_segment=segment,
+                expiry=target_expiry
+            )
+            print("Data successfully retrieved:", response)
+        else:
+            print("No expiry dates found for this instrument.")
+    
         # Use the correct method name: 'option_chain'
         # Note the parameter names exactly as they are defined in the SDK
         response = dhan.option_chain(
@@ -496,7 +513,7 @@ if st.button("Fetch Option Chain"):
             expiry="2026-07-29"               # Use the key 'expiry' exactly
         )
 
-        st.write({response})
+        #st.write({response})
         
         # Check if the response is successful
         if response.get("status") == "success":
