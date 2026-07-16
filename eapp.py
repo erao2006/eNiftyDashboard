@@ -485,8 +485,8 @@ if st.button("Fetch Option Chain"):
         # Assuming 'dhan' is your initialized dhanhq client
 
         response = dhan.option_chain(
-            security_id=2,             # Replace with the specific Security ID of the Index
-            exchange_segment="OPTIDX",       # As per your first screenshot for Index
+            security_id=26000,             # Replace with the specific Security ID of the Index
+            exchange_segment="INDEX",       # As per your first screenshot for Index
             expiry_date="2026-07-21"        # Ensure the date format is YYYY-MM-DD
         )
 
