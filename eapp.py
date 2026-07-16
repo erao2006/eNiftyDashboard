@@ -485,6 +485,8 @@ if st.button("Fetch Option Chain"):
         # Assuming 'dhan' is your initialized dhanhq client
         #import inspect
         #st.write(inspect.signature(dhan.get_option_chain))
+        # Print all available methods in your 'dhan' object
+        st.write([method for method in dir(dhan) if not method.startswith('_')])
 
         # The official method name is 'get_option_chain'
         # Note the parameter names below:
