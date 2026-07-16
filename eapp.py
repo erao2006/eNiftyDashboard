@@ -59,6 +59,20 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(page_title="Dhan Monitor & Portfolio", layout="centered")
 
+def get_public_ip():
+    try:
+        # Fetching public IP from ipify
+        response = requests.get('https://api.ipify.org')
+        return response.text
+    except Exception as e:
+        return f"Error: {e}"
+
+st.title("My Public IP Address")
+
+if st.button("Get My IP"):
+    ip = get_public_ip()
+    st.write(f"Your public IP address is: **{ip}**")
+
 # --------------------------
 # Condition for market hours 
 # --------------------------
@@ -76,7 +90,7 @@ def is_market_open():
         return False
     
     # Create start and end time objects for the current day in IST
-    start_time = now.replace(hour=8, minute=55, second=0, microsecond=0)
+    start_time = now.replace(hour=3, minute=55, second=0, microsecond=0)
     end_time = now.replace(hour=23, minute=35, second=0, microsecond=0)
     
     return start_time <= now <= end_time
