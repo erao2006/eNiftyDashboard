@@ -176,27 +176,23 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
-def fetch_forever_orders():
+def fetch_super_orders():
     try:
-        # Assuming 'dhan' is your initialized Dhan object
-        response = dhan.get_forever_orders() 
+        # The official SDK method for Super Orders
+        response = dhan.get_super_orders()
         
-        if isinstance(response, dict) and response.get("status") == "success":
-            st.success("🟢 Dhan Forever Orders API successful: 200 OK")
-            orders = response.get("data", []) if response.get("data") else []
-            df = pd.DataFrame(orders)
-            
-            # Adjust column names based on the response structure of Forever Orders
-            columns_to_keep = ['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus']
+        # Dhan returns a list of orders directly
+        if isinstance(response, list) and len(response) > 0:
+            df = pd.DataFrame(response)
+            # Adjust column names as needed for your UI
+            columns_to_keep = ['orderId', 'tradingSymbol', 'transactionType', 'orderStatus', 'price', 'targetPrice', 'stopLossPrice']
             available_cols = [col for col in columns_to_keep if col in df.columns]
             return df[available_cols]
         else:
-            remark = response.get("remarks") if isinstance(response, dict) else "Could not fetch Forever Orders"
-            st.error(f"🔴 Dhan Forever Orders API Failed: {remark}")
+            return pd.DataFrame()
     except Exception as e:
-        st.error(f"🔴 Dhan Forever Orders API Failed: 500 Connection Error | {e}")
-        
-    return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
+        st.error(f"🔴 Dhan Super Orders API Failed: {e}")
+        return pd.DataFrame()
 
 
 #@st.fragment()
@@ -469,15 +465,14 @@ if not orders_df.empty:
 else:
     st.info("No orders processed today.")
 
-# --- Super Orders (Forever Orders) ---
-st.markdown("### ♾️ Super Orders (Forever)")
-forever_orders_df = fetch_forever_orders() # Ensure you have this function defined
+# --- Streamlit Display ---
+st.markdown("### 🚀 Super Orders")
+super_orders_df = fetch_super_orders()
 
-if not forever_orders_df.empty:
-    st.dataframe(forever_orders_df, width='stretch', hide_index=True)
+if not super_orders_df.empty:
+    st.dataframe(super_orders_df, width='stretch', hide_index=True)
 else:
     st.info("No active super orders found.")
-
 
 # ------- new section
 # -------- NIFTY 50 ADVANCE / DECLINE --------
