@@ -110,6 +110,24 @@ except Exception as init_err:
 #response = requests.get(url, headers=headers)
 #print(f"Status Code: {response.status_code}")
 #print(f"Response Body: {response.text}") # This will often contain the specific error message
+# Note: These operations require your IP to be whitelisted in your Dhan dashboard
+BASE_URL = "https://api.dhan.co/v2/super/orders"
+
+def modify_super_order(order_id, leg_name, price=None, target=None, stop_loss=None):
+    url = f"{BASE_URL}/{order_id}"
+    headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
+    payload = {"dhanClientId": st.secrets["CLIENT_ID"], "legName": leg_name}
+    if price: payload["price"] = price
+    if target: payload["targetPrice"] = target
+    if stop_loss: payload["stopLossPrice"] = stop_loss
+    
+    return requests.put(url, json=payload, headers=headers)
+
+def cancel_super_order(order_id, leg_name):
+    # leg_name can be ENTRY_LEG, TARGET_LEG, or STOP_LOSS_LEG
+    url = f"{BASE_URL}/{order_id}/{leg_name}"
+    headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"]}
+    return requests.delete(url, headers=headers)
 
 
 # ----------------------------------------------------
@@ -482,6 +500,34 @@ if not super_orders_df.empty:
 else:
     st.info("No active super orders found.")
 
+st.markdown("### 🚀 Real-time Super Orders")
+super_df = fetch_super_orders() # Your existing fetch function
+
+if not super_df.empty:
+    for index, row in super_df.iterrows():
+        cols = st.columns([4, 1, 1])
+        cols[0].write(f"{row['tradingSymbol']} | {row['orderStatus']}")
+        
+        # Modify Button
+        if cols[1].button("Modify", key=f"mod_{row['orderId']}"):
+            st.session_state.mod_id = row['orderId']
+            
+        # Cancel Button
+        if cols[2].button("Cancel", key=f"can_{row['orderId']}"):
+            resp = cancel_super_order(row['orderId'], "ENTRY_LEG")
+            if resp.status_code == 202:
+                st.success("Cancelled")
+            else:
+                st.error("Failed to cancel")
+
+    # Conditional Input for Modification
+    if 'mod_id' in st.session_state:
+        st.write(f"Modifying Order: {st.session_state.mod_id}")
+        new_price = st.number_input("New Price", value=0.0)
+        if st.button("Confirm Modify"):
+            modify_super_order(st.session_state.mod_id, "ENTRY_LEG", price=new_price)
+            del st.session_state.mod_id
+            st.rerun()
 # ------- new section
 # -------- NIFTY 50 ADVANCE / DECLINE --------
 adv, dec, unc, ad_ratio = get_nifty50_ad()
