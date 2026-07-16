@@ -476,7 +476,7 @@ st.title("DhanHQ Option Chain Tracker")
 
 # 2. Input Fields
 security_id = st.text_input("Enter Underlying Security ID (e.g., 13 for Nifty)", "13")
-expiry_date = st.text_input("Enter Expiry Date (YYYY-MM-DD)", "2026-07-30")
+expiry_date = st.text_input("Enter Expiry Date (YYYY-MM-DD)", "2026-07-20")
 
 if st.button("Fetch Option Chain"):
     # Change here: Try using symbol="NIFTY" if security_id=13 fails
@@ -485,7 +485,7 @@ if st.button("Fetch Option Chain"):
         response = dhan.option_chain(
             under_security_id=1333,
             under_exchange_segment="IDX_I",
-            expiry="2026-07-20" # This third argument is required
+            expiry="2026-07-21" # This third argument is required
         )
 
         
