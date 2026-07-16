@@ -106,6 +106,11 @@ except Exception as init_err:
     st.error(f"🔴 System Configuration Error | Initialization Failed: {init_err}")
     st.stop()
 
+#headers = {"access-token": ACCESS_TOKEN, "Content-Type": "application/json"}⁠
+#response = requests.get(url, headers=headers)
+#print(f"Status Code: {response.status_code}")
+#print(f"Response Body: {response.text}") # This will often contain the specific error message
+
 
 # ----------------------------------------------------
 # 3. Stable Market Engine (With Percentage Logic)
@@ -176,14 +181,10 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
-import requests
-import pandas as pd
-import streamlit as st
-
 def fetch_super_orders():
     url = "https://api.dhan.co/v2/super/orders"
     headers = {
-        "access-token": "YOUR_ACCESS_TOKEN",  # Replace with your actual token
+        "access-token": ACCESS_TOKEN,  # Replace with your actual token
         "Content-Type": "application/json"
     }
     
