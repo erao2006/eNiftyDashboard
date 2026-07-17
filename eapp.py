@@ -236,10 +236,10 @@ def fetch_orders():
 
 def fetch_super_orders():
     url = "https://api.dhan.co/v2/super/orders"
-    headers = {
-        "access-token": ACCESS_TOKEN,  # Replace with your actual token
-        "Content-Type": "application/json"
-    }
+    #headers = {
+    #    "access-token": ACCESS_TOKEN,  # Replace with your actual token
+    #   "Content-Type": "application/json"
+    #}
     
     try:
         response = requests.get(url, headers=headers)
