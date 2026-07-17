@@ -144,11 +144,14 @@ except Exception as init_err:
 #print(f"Response Body: {response.text}") # This will often contain the specific error message
 # Note: These operations require your IP to be whitelisted in your Dhan dashboard
 BASE_URL = "https://api.dhan.co/v2/super/orders"
+headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
+payload = {"dhanClientId": st.secrets["DHAN_CLIENT_ID"], "legName": leg_name}
+
 
 def modify_super_order(order_id, leg_name, price=None, target=None, stop_loss=None):
     url = f"{BASE_URL}/{order_id}"
-    headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
-    payload = {"dhanClientId": st.secrets["CLIENT_ID"], "legName": leg_name}
+    #headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
+    #payload = {"dhanClientId": st.secrets["CLIENT_ID"], "legName": leg_name}
     if price: payload["price"] = price
     if target: payload["targetPrice"] = target
     if stop_loss: payload["stopLossPrice"] = stop_loss
