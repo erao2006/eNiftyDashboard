@@ -245,6 +245,7 @@ def fetch_super_orders():
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json()
+            st.write("Super orders:: {data}")
             # Returns a list of super orders
             if isinstance(data, list) and len(data) > 0:
                 return pd.DataFrame(data)
