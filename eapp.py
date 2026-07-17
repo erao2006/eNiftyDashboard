@@ -234,6 +234,11 @@ def fetch_orders():
         st.error(f"🔴 Dhan Orders API Failed: 500 Connection Error | {e}")
     return pd.DataFrame(columns=['tradingSymbol', 'transactionType', 'orderType', 'quantity', 'price', 'orderStatus'])
 
+
+# Fetch all super orders (includes options if placed)
+response = dhan.get_super_order_list()
+st.write(f"Super reaponse list:: {response}")
+
 def fetch_super_orders():
     url = "https://api.dhan.co/v2/super/orders"
     headers = {
