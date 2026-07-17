@@ -145,7 +145,7 @@ except Exception as init_err:
 # Note: These operations require your IP to be whitelisted in your Dhan dashboard
 BASE_URL = "https://api.dhan.co/v2/super/orders"
 headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
-payload = {"dhanClientId": st.secrets["DHAN_CLIENT_ID"], "legName": leg_name}
+payload = {"dhanClientId": st.secrets["DHAN_CLIENT_ID"], "legName": "BuyOrder"}
 
 
 def modify_super_order(order_id, leg_name, price=None, target=None, stop_loss=None):
