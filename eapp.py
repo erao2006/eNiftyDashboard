@@ -242,7 +242,8 @@ st.write(f"Super reaponse list:: {response}")
 def fetch_super_orders():
     url = "https://api.dhan.co/v2/super/orders"
     headers = {
-        "access-token": ACCESS_TOKEN,  # Replace with your actual token
+        #"access-token": ACCESS_TOKEN,  # Replace with your actual token
+       "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzg0MzM0MzUxLCJpYXQiOjE3ODQyNDc5NTEsInRva2VuQ29uc3VtZXJUeXBlIjoiU0VMRiIsIndlYmhvb2tVcmwiOiIiLCJkaGFuQ2xpZW50SWQiOiIxMTAzMTE5NzgyIn0.VfaR04loG0y1WNGna_h7NV_6SagqgR0FZucSMdqCpZUgqq9166C95I6TTOjhET7tzs4Y11vdYTX7AIJlwRnVwg",
        "Content-Type": "application/json"
     }
     
