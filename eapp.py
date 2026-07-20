@@ -69,9 +69,9 @@ def get_public_ip():
 
 #st.title("My Public IP Address")
 
-#if st.button("Get My IP"):
-#    ip = get_public_ip()
-#    st.write(f"Your public IP address is: **{ip}**")
+if st.button("Get My IP"):
+    ip = get_public_ip()
+    st.write(f"Your public IP address is: **{ip}**")
 
 # --------------------------
 # Condition for market hours 
