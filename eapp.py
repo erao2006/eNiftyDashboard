@@ -67,11 +67,11 @@ def get_public_ip():
     except Exception as e:
         return f"Error: {e}"
 
-st.title("My Public IP Address")
+#st.title("My Public IP Address")
 
-if st.button("Get My IP"):
-    ip = get_public_ip()
-    st.write(f"Your public IP address is: **{ip}**")
+#if st.button("Get My IP"):
+#    ip = get_public_ip()
+#    st.write(f"Your public IP address is: **{ip}**")
 
 # --------------------------
 # Condition for market hours 
@@ -237,7 +237,7 @@ def fetch_orders():
 
 # Fetch all super orders (includes options if placed)
 response = dhan.get_super_order_list()
-st.write(f"Super reaponse list:: {response}")
+#st.write(f"Super reaponse list:: {response}")
 
 def fetch_super_orders():
     url = "https://api.dhan.co/v2/super/orders"
@@ -251,7 +251,7 @@ def fetch_super_orders():
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             data = response.json()
-            st.write(f"Super orders:: {data}")
+            #st.write(f"Super orders:: {data}")
             # Returns a list of super orders
             if isinstance(data, list) and len(data) > 0:
                 return pd.DataFrame(data)
