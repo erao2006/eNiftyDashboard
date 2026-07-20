@@ -90,7 +90,7 @@ def is_market_open():
         return False
     
     # Create start and end time objects for the current day in IST
-    start_time = now.replace(hour=8, minute=55, second=0, microsecond=0)
+    start_time = now.replace(hour=4, minute=55, second=0, microsecond=0)
     end_time = now.replace(hour=23, minute=35, second=0, microsecond=0)
     
     return start_time <= now <= end_time
@@ -145,13 +145,13 @@ except Exception as init_err:
 # Note: These operations require your IP to be whitelisted in your Dhan dashboard
 BASE_URL = "https://api.dhan.co/v2/super/orders"
 headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
-payload = {"dhanClientId": st.secrets["DHAN_CLIENT_ID"], "legName": "BuyOrder"}
+#payload = {"dhanClientId": st.secrets["DHAN_CLIENT_ID"], "legName": "BuyOrder"}
 
 
 def modify_super_order(order_id, leg_name, price=None, target=None, stop_loss=None):
     url = f"{BASE_URL}/{order_id}"
     #headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
-    #payload = {"dhanClientId": st.secrets["CLIENT_ID"], "legName": leg_name}
+    payload = {"dhanClientId": st.secrets["DHAN_CLIENT_ID"], "legName": leg_name}
     if price: payload["price"] = price
     if target: payload["targetPrice"] = target
     if stop_loss: payload["stopLossPrice"] = stop_loss
@@ -567,7 +567,7 @@ if not super_df.empty:
         st.write(f"Modifying Order: {st.session_state.mod_id}")
         new_price = st.number_input("New Price", value=0.0)
         if st.button("Confirm Modify"):
-            modify_super_order(st.session_state.mod_id, "ENTRY_LEG", price=new_price)
+            modify_super_order(st.session_state.mod_id, "STOP_LOSS_LEG", price=new_price)
             del st.session_state.mod_id
             st.rerun()
 # ------- new section
