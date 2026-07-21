@@ -147,6 +147,45 @@ BASE_URL = "https://api.dhan.co/v2/super/orders"
 headers = {"access-token": st.secrets["DHAN_ACCESS_TOKEN"], "Content-Type": "application/json"}
 #payload = {"dhanClientId": st.secrets["DHAN_CLIENT_ID"], "legName": "BuyOrder"}
 
+import requests
+import streamlit as st
+
+# Base URL for Dhan Super Orders API v2
+BASE_URL = "https://api.dhan.co/v2/super/orders"
+
+
+def place_super_order(
+    security_id,
+    exchange_segment,
+    transaction_type,
+    product_type,
+    order_type,
+    quantity,
+    price,
+    target_price,
+    stop_loss_price,
+    trailing_jump=0,
+):
+  url = BASE_URL
+  headers = {
+      "access-token": st.secrets["DHAN_ACCESS_TOKEN"],
+      "Content-Type": "application/json",
+  }
+  payload = {
+      "dhanClientId": st.secrets["DHAN_CLIENT_ID"],
+      "securityId": security_id,
+      "exchangeSegment": exchange_segment,
+      "transactionType": transaction_type,  # 'BUY' or 'SELL'
+      "productType": product_type,  # 'INTRADAY', 'CNC', 'MTF', etc.
+      "orderType": order_type,  # 'LIMIT' or 'MARKET'
+      "quantity": int(quantity),
+      "price": float(price) if price else 0,
+      "targetPrice": float(target_price),
+      "stopLossPrice": float(stop_loss_price),
+      "trailingJump": float(trailing_jump) if trailing_jump else 0,
+  }
+
+  return requests.post(url, json=payload, headers=headers)
 
 def modify_super_order(order_id, leg_name, price=None, target=None, stop_loss=None):
     url = f"{BASE_URL}/{order_id}"
@@ -544,6 +583,84 @@ else:
 
 st.markdown("### 🚀 Real-time Super Orders")
 super_df = fetch_super_orders() # Your existing fetch function
+
+# ==========================================
+# STREAMLIT UI COMPONENTS
+# ==========================================
+st.title("Dhan Super Order Management")
+
+st.subheader("Place New Super Order")
+
+with st.form("super_order_form"):
+  col1, col2 = st.columns(2)
+
+  with col1:
+    security_id = st.text_input("Security ID", placeholder="e.g., 11536")
+    exchange_segment = st.selectbox(
+        "Exchange Segment", ["NSE_EQ", "NSE_FNO", "BSE_EQ", "MCX_COMM"]
+    )
+    transaction_type = st.selectbox("Transaction Type", ["BUY", "SELL"])
+    product_type = st.selectbox(
+        "Product Type", ["INTRADAY", "CNC", "MARGIN", "MTF"]
+    )
+    order_type = st.selectbox("Order Type", ["LIMIT", "MARKET"])
+
+  with col2:
+    quantity = st.number_input("Quantity", min_value=1, value=1)
+    price = st.number_input(
+        "Entry Price (0 for Market)", min_value=0.0, value=0.0, step=0.05
+    )
+    target_price = st.number_input(
+        "Target Price", min_value=0.0, value=0.0, step=0.05
+    )
+    stop_loss_price = st.number_input(
+        "Stop Loss Price", min_value=0.0, value=0.0, step=0.05
+    )
+    trailing_jump = st.number_input(
+        "Trailing Jump (Optional)", min_value=0.0, value=0.0, step=0.05
+    )
+
+  submit_button = st.form_submit_button(label="Place Super Order")
+
+  if submit_button:
+    if not security_id:
+      st.error("Please enter a valid Security ID.")
+    elif target_price <= 0 or stop_loss_price <= 0:
+      st.error("Target Price and Stop Loss Price must be greater than 0.")
+    else:
+      with st.spinner("Placing Super Order..."):
+        response = place_super_order(
+            security_id=security_id,
+            exchange_segment=exchange_segment,
+            transaction_type=transaction_type,
+            product_type=product_type,
+            order_type=order_type,
+            quantity=quantity,
+            price=price,
+            target_price=target_price,
+            stop_loss_price=stop_loss_price,
+            trailing_jump=trailing_jump,
+        )
+
+        try:
+          res_data = response.json()
+          if response.status_code == 200 and res_data.get("orderStatus") in [
+              "PENDING",
+              "TRANSIT",
+              "TRADED",
+              "PART_TRADED",
+          ]:
+            st.success(
+                f"Super Order Placed Successfully! Order ID:"
+                f" {res_data.get('orderId')}"
+            )
+          else:
+            st.error(f"Failed to place order: {res_data}")
+        except Exception as e:
+            st.error(
+                f"An error occurred: {e} | Raw Response: {response.text}"
+            )
+
 
 if not super_df.empty:
     for index, row in super_df.iterrows():
