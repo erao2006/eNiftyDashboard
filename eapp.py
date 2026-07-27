@@ -667,10 +667,8 @@ if not super_df.empty:
         with st.container():
             cols = st.columns([5, 1, 1])
             
-            # Use specific option symbol info if available, falling back to tradingSymbol or securityId
             symbol_name = row.get('tradingSymbol', '')
             if not symbol_name or symbol_name == "SENSEX":
-                # Fallback or mapping if the dataframe column names differ (e.g., matching the detailed name format)
                 symbol_name = row.get('optionSymbol', f"SENSEX-{row.get('securityId', 'N/A')}")
                 
             symbol_info = f"**{symbol_name}**"
@@ -692,56 +690,40 @@ if not super_df.empty:
             
             st.markdown("---")
 
-    # Conditional Form for Modification
+    # Conditional Form for Modification with individual modify buttons and plain text/number inputs
     if 'mod_id' in st.session_state:
-        st.subheader("Modify Super Order")
-        
+        st.subheader("Modify Super Order Legs")
         st.text_input("Order ID (Non-editable)", value=st.session_state.mod_id, disabled=True)
         
-        # Interactive mapping for legs and dynamic input values side by side
-        legs_data = {
-            "ENTRY_LEG": "mod_price",
-            "TARGET_LEG": "mod_target",
-            "STOP_LOSS_LEG": "mod_sl"
-        }
+        legs_data = [
+            ("ENTRY_LEG", "mod_price", "price"),
+            ("TARGET_LEG", "mod_target", "target"),
+            ("STOP_LOSS_LEG", "mod_sl", "stop_loss")
+        ]
         
-        mod_values = {}
-        for leg_name, key_name in legs_data.items():
-            cols = st.columns([2, 3])
+        for leg_name, key_name, param_name in legs_data:
+            st.markdown(f"**{leg_name}**")
+            cols = st.columns([3, 1])
             with cols[0]:
-                st.markdown(f"**{leg_name}**")
+                # Using text_input for raw text/number entry without +/- step steppers
+                val_str = st.text_input(f"Value for {leg_name}", value="", key=key_name, label_visibility="collapsed", placeholder="Enter value...")
             with cols[1]:
-                mod_values[leg_name] = st.number_input(
-                    f"Value for {leg_name}", 
-                    value=0.0, 
-                    step=0.05, 
-                    key=key_name,
-                    label_visibility="collapsed"
-                )
-            
-        m_cols = st.columns(2)
-        if m_cols[0].button("Confirm Modify All"):
-            for leg_name, val in mod_values.items():
-                if val > 0:
-                    kwargs = {}
-                    if leg_name == "ENTRY_LEG":
-                        kwargs["price"] = val
-                    elif leg_name == "TARGET_LEG":
-                        kwargs["target"] = val
-                    elif leg_name == "STOP_LOSS_LEG":
-                        kwargs["stop_loss"] = val
+                if st.button("Modify", key=f"btn_{leg_name}"):
+                    try:
+                        val = float(val_str) if val_str.strip() else 0.0
+                        if val > 0:
+                            kwargs = {param_name: val}
+                            resp = modify_super_order(order_id=st.session_state.mod_id, leg_name=leg_name, **kwargs)
+                            if resp and resp.status_code == 200:
+                                st.success(f"Successfully modified {leg_name}")
+                            else:
+                                st.success(f"Modification request sent for {leg_name}")
+                        else:
+                            st.warning("Please enter a valid number greater than 0")
+                    except ValueError:
+                        st.error("Invalid number format")
                         
-                    modify_super_order(
-                        order_id=st.session_state.mod_id, 
-                        leg_name=leg_name, 
-                        **kwargs
-                    )
-            
-            del st.session_state.mod_id
-            st.success("Modifications applied successfully!")
-            st.rerun()
-            
-        if m_cols[1].button("Close Modification"):
+        if st.button("Close Modification"):
             del st.session_state.mod_id
             st.rerun()
 
