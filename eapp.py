@@ -667,7 +667,13 @@ if not super_df.empty:
         with st.container():
             cols = st.columns([5, 1, 1])
             
-            symbol_info = f"**{row.get('tradingSymbol', 'N/A')}**"
+            # Use specific option symbol info if available, falling back to tradingSymbol or securityId
+            symbol_name = row.get('tradingSymbol', '')
+            if not symbol_name or symbol_name == "SENSEX":
+                # Fallback or mapping if the dataframe column names differ (e.g., matching the detailed name format)
+                symbol_name = row.get('optionSymbol', f"SENSEX-{row.get('securityId', 'N/A')}")
+                
+            symbol_info = f"**{symbol_name}**"
             status_info = f"Status: `{row.get('orderStatus', 'N/A')}`"
             qty_price = f"Qty: {row.get('quantity', 0)} | Price: {row.get('price', 0)}"
             
@@ -679,7 +685,7 @@ if not super_df.empty:
             if cols[2].button("Cancel", key=f"can_{row['orderId']}"):
                 resp = cancel_super_order(row['orderId'], "ENTRY_LEG")
                 if resp.status_code == 202:
-                    st.success(f"Cancelled {row.get('tradingSymbol', '')}")
+                    st.success(f"Cancelled {symbol_name}")
                     st.rerun()
                 else:
                     st.error("Failed to cancel")
