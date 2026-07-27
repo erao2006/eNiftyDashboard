@@ -679,14 +679,45 @@ if not super_df.empty:
             else:
                 st.error("Failed to cancel")
 
-    # Conditional Input for Modification
+    # Conditional Input Form for Modification
     if 'mod_id' in st.session_state:
-        st.write(f"Modifying Order: {st.session_state.mod_id}")
-        new_price = st.number_input("New Price", value=0.0)
-        if st.button("Confirm Modify"):
-            modify_super_order(st.session_state.mod_id, "STOP_LOSS_LEG", price=new_price)
+        st.markdown("---")
+        st.subheader("Modify Super Order")
+        
+        # Non-editable Order ID display
+        st.text_input("Order ID (Non-editable)", value=st.session_state.mod_id, disabled=True)
+        
+        # Leg Name Dropdown Selection
+        leg_options = ["ENTRY_LEG", "TARGET_LEG", "STOP_LOSS_LEG"]
+        selected_leg = st.selectbox("Select Leg Name", options=leg_options, key="mod_leg_name")
+        
+        # Dynamic inputs based on selected leg or generalized inputs
+        col_p, col_t, col_s = st.columns(3)
+        with col_p:
+            new_price = st.number_input("New Price", value=0.0, step=0.05, key="mod_price")
+        with col_t:
+            new_target = st.number_input("New Target Price", value=0.0, step=0.05, key="mod_target")
+        with col_s:
+            new_sl = st.number_input("New Stop Loss Price", value=0.0, step=0.05, key="mod_sl")
+            
+        # Action Buttons
+        m_cols = st.columns(2)
+        if m_cols[0].button("Confirm Modify"):
+            modify_super_order(
+                order_id=st.session_state.mod_id, 
+                leg_name=selected_leg, 
+                price=new_price if new_price > 0 else None,
+                target=new_target if new_target > 0 else None,
+                stop_loss=new_sl if new_sl > 0 else None
+            )
+            del st.session_state.mod_id
+            st.success("Order modification sent successfully!")
+            st.rerun()
+            
+        if m_cols[1].button("Cancel Modification"):
             del st.session_state.mod_id
             st.rerun()
+
 # ------- new section
 # -------- NIFTY 50 ADVANCE / DECLINE --------
 adv, dec, unc, ad_ratio = get_nifty50_ad()
