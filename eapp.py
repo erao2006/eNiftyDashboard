@@ -664,59 +664,81 @@ with st.form("super_order_form"):
 
 if not super_df.empty:
     for index, row in super_df.iterrows():
-        cols = st.columns([4, 1, 1])
-        cols[0].write(f"{row['tradingSymbol']} | {row['orderStatus']}")
-        
-        # Modify Button
-        if cols[1].button("Modify", key=f"mod_{row['orderId']}"):
-            st.session_state.mod_id = row['orderId']
+        with st.container():
+            cols = st.columns([5, 1, 1])
             
-        # Cancel Button
-        if cols[2].button("Cancel", key=f"can_{row['orderId']}"):
-            resp = cancel_super_order(row['orderId'], "ENTRY_LEG")
-            if resp.status_code == 202:
-                st.success("Cancelled")
-            else:
-                st.error("Failed to cancel")
+            symbol_info = f"**{row.get('tradingSymbol', 'N/A')}**"
+            status_info = f"Status: `{row.get('orderStatus', 'N/A')}`"
+            qty_price = f"Qty: {row.get('quantity', 0)} | Price: {row.get('price', 0)}"
+            
+            cols[0].markdown(f"{symbol_info} | {status_info} \n {qty_price}")
+            
+            if cols[1].button("Modify", key=f"mod_{row['orderId']}"):
+                st.session_state.mod_id = row['orderId']
+                
+            if cols[2].button("Cancel", key=f"can_{row['orderId']}"):
+                resp = cancel_super_order(row['orderId'], "ENTRY_LEG")
+                if resp.status_code == 202:
+                    st.success(f"Cancelled {row.get('tradingSymbol', '')}")
+                    st.rerun()
+                else:
+                    st.error("Failed to cancel")
+            
+            st.markdown("---")
 
-    # Conditional Input Form for Modification
+    # Conditional Form for Modification
     if 'mod_id' in st.session_state:
-        st.markdown("---")
         st.subheader("Modify Super Order")
         
-        # Non-editable Order ID display
         st.text_input("Order ID (Non-editable)", value=st.session_state.mod_id, disabled=True)
         
-        # Leg Name Dropdown Selection
-        leg_options = ["ENTRY_LEG", "TARGET_LEG", "STOP_LOSS_LEG"]
-        selected_leg = st.selectbox("Select Leg Name", options=leg_options, key="mod_leg_name")
+        # Interactive mapping for legs and dynamic input values side by side
+        legs_data = {
+            "ENTRY_LEG": "mod_price",
+            "TARGET_LEG": "mod_target",
+            "STOP_LOSS_LEG": "mod_sl"
+        }
         
-        # Dynamic inputs based on selected leg or generalized inputs
-        col_p, col_t, col_s = st.columns(3)
-        with col_p:
-            new_price = st.number_input("New Price", value=0.0, step=0.05, key="mod_price")
-        with col_t:
-            new_target = st.number_input("New Target Price", value=0.0, step=0.05, key="mod_target")
-        with col_s:
-            new_sl = st.number_input("New Stop Loss Price", value=0.0, step=0.05, key="mod_sl")
+        mod_values = {}
+        for leg_name, key_name in legs_data.items():
+            cols = st.columns([2, 3])
+            with cols[0]:
+                st.markdown(f"**{leg_name}**")
+            with cols[1]:
+                mod_values[leg_name] = st.number_input(
+                    f"Value for {leg_name}", 
+                    value=0.0, 
+                    step=0.05, 
+                    key=key_name,
+                    label_visibility="collapsed"
+                )
             
-        # Action Buttons
         m_cols = st.columns(2)
-        if m_cols[0].button("Confirm Modify"):
-            modify_super_order(
-                order_id=st.session_state.mod_id, 
-                leg_name=selected_leg, 
-                price=new_price if new_price > 0 else None,
-                target=new_target if new_target > 0 else None,
-                stop_loss=new_sl if new_sl > 0 else None
-            )
+        if m_cols[0].button("Confirm Modify All"):
+            for leg_name, val in mod_values.items():
+                if val > 0:
+                    kwargs = {}
+                    if leg_name == "ENTRY_LEG":
+                        kwargs["price"] = val
+                    elif leg_name == "TARGET_LEG":
+                        kwargs["target"] = val
+                    elif leg_name == "STOP_LOSS_LEG":
+                        kwargs["stop_loss"] = val
+                        
+                    modify_super_order(
+                        order_id=st.session_state.mod_id, 
+                        leg_name=leg_name, 
+                        **kwargs
+                    )
+            
             del st.session_state.mod_id
-            st.success("Order modification sent successfully!")
+            st.success("Modifications applied successfully!")
             st.rerun()
             
-        if m_cols[1].button("Cancel Modification"):
+        if m_cols[1].button("Close Modification"):
             del st.session_state.mod_id
             st.rerun()
+
 
 # ------- new section
 # -------- NIFTY 50 ADVANCE / DECLINE --------
