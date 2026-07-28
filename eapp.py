@@ -591,30 +591,27 @@ st.title("Dhan Super Order Management")
 
 st.subheader("Place New Super Order")
 
-# Session state to manage whether the form is displayed
+# Session state to manage form visibility
 if "show_form" not in st.session_state:
   st.session_state.show_form = False
 
-# Initial button to reveal the form
 if not st.session_state.show_form:
   if st.button("Place Order"):
     st.session_state.show_form = True
     st.rerun()
 
-# Function to load security master list with caching
+# Robust function to load security master bypassing SDK import path errors
 @st.cache_data(ttl=86400)
 def load_security_master():
+  # Direct URL fallback ensures it never fails on SDK module discrepancies
+  url = "https://images.dhan.co/api-data/api-scrip-master-compact.csv"
   try:
-    # Using the official SDK method to fetch the compact scrip master list
-    from dhanhq import security
-    df = security.fetch_security_list(mode="compact", filename="security_master.csv")
+    df = pd.read_csv(url, low_memory=False)
     return df
-  except Exception:
-    # Fallback to direct URL if SDK import context varies
-    url = "https://images.dhan.co/api-data/api-scrip-master-compact.csv"
-    return pd.read_csv(url)
+  except Exception as e:
+    st.error(f"Error downloading security master: {e}")
+    return pd.DataFrame()
 
-# Display form only after clicking "Place Order"
 if st.session_state.show_form:
   df_instruments = load_security_master()
 
@@ -627,19 +624,17 @@ if st.session_state.show_form:
           ["NSE_EQ", "NSE_FNO", "BSE_EQ", "BSE_FNO", "MCX_COMM"]
       )
       
-      # Filter instruments dynamically based on selected exchange segment
-      filtered_df = df_instruments[
-          df_instruments["SEM_EXCH_SEGMENT"] == exchange_segment
-      ] if "SEM_EXCH_SEGMENT" in df_instruments.columns else df_instruments
+      filtered_df = pd.DataFrame()
+      if not df_instruments.empty and "SEM_EXCH_SEGMENT" in df_instruments.columns:
+        filtered_df = df_instruments[df_instruments["SEM_EXCH_SEGMENT"] == exchange_segment]
 
       selected_symbol = st.selectbox(
           "Select Scrip / Contract",
           options=filtered_df["SEM_TRADING_SYMBOL"].tolist() if "SEM_TRADING_SYMBOL" in filtered_df.columns else []
       )
 
-      # Automatically map trading symbol to Security ID
       security_id = ""
-      if selected_symbol and "SEM_TRADING_SYMBOL" in filtered_df.columns:
+      if selected_symbol and not filtered_df.empty and "SEM_TRADING_SYMBOL" in filtered_df.columns:
         match_row = filtered_df[filtered_df["SEM_TRADING_SYMBOL"] == selected_symbol]
         if not match_row.empty:
           security_id = str(match_row.iloc[0]["SEM_SMST_SECURITY_ID"])
@@ -653,10 +648,8 @@ if st.session_state.show_form:
       order_type = st.selectbox("Order Type", ["LIMIT", "MARKET"])
 
     with col2:
-      # Free text fields for numbers only (without +, -)
       quantity = st.text_input("Quantity", value="1")
       
-      # Disable entry price if MARKET order type is selected
       if order_type == "MARKET":
         price = st.text_input("Entry Price", value="0.00", disabled=True)
       else:
@@ -666,7 +659,6 @@ if st.session_state.show_form:
       stop_loss_price = st.text_input("Stop Loss Price", value="0.00")
       trailing_jump = st.text_input("Trailing Jump (Optional)", value="0.00")
 
-    # Form submission button changed to Confirm Order
     submit_button = st.form_submit_button(label="Confirm Order")
 
     if submit_button:
