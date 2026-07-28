@@ -589,30 +589,64 @@ super_df = fetch_super_orders() # Your existing fetch function
 # ==========================================
 st.title("Dhan Super Order Management")
 
-import streamlit as st
+from dhanhq import security  # or use your initialized dhan client instance
 
 st.subheader("Place New Super Order")
 
-# Session state to manage whether the form is displayed
+# 1. Function to load security master list with caching
+@st.cache_data(ttl=86400) # Cache for a day since scrip master updates daily
+def load_security_master():
+  try:
+    # This fetches the compact CSV file containing security IDs and trading symbols
+    df = security.fetch_security_list(mode="compact", filename="security_master.csv")
+    return df
+  except Exception as e:
+    # Fallback or handle download if direct SDK method varies by version
+    url = "https://images.dhan.co/api-data/api-scrip-master-compact.csv"
+    return pd.read_csv(url)
+
+# Load the data safely
+df_instruments = load_security_master()
+
+# Session state to manage form visibility
 if "show_form" not in st.session_state:
   st.session_state.show_form = False
 
-# Initial button to reveal the form
 if not st.session_state.show_form:
   if st.button("Place Order"):
     st.session_state.show_form = True
     st.rerun()
 
-# Display form only after the initial button is clicked
 if st.session_state.show_form:
   with st.form("super_order_form"):
     col1, col2 = st.columns(2)
 
     with col1:
-      security_id = st.text_input("Security ID", placeholder="e.g., 11536")
       exchange_segment = st.selectbox(
           "Exchange Segment", ["NSE_EQ", "NSE_FNO", "BSE_EQ", "BSE_FNO", "MCX_COMM"]
       )
+      
+      # Filter instruments dynamically based on selected exchange segment if columns match, 
+      # then allow users to search/select a trading symbol instead of memorizing security IDs.
+      # Assuming columns in master are 'SEM_EXCH_SEGMENT' and 'SEM_TRADING_SYMBOL' / 'SEM_SMST_SECURITY_ID'
+      filtered_df = df_instruments[
+          df_instruments["SEM_EXCH_SEGMENT"] == exchange_segment
+      ] if "SEM_EXCH_SEGMENT" in df_instruments.columns else df_instruments
+
+      selected_symbol = st.selectbox(
+          "Select Scrip / Contract",
+          options=filtered_df["SEM_TRADING_SYMBOL"].tolist() if "SEM_TRADING_SYMBOL" in filtered_df.columns else []
+      )
+
+      # Automatically resolve the Security ID based on the selected trading symbol
+      security_id = ""
+      if selected_symbol and "SEM_TRADING_SYMBOL" in filtered_df.columns:
+        match_row = filtered_df[filtered_df["SEM_TRADING_SYMBOL"] == selected_symbol]
+        if not match_row.empty:
+          security_id = str(match_row.iloc[0]["SEM_SMST_SECURITY_ID"])
+
+      st.text_input("Resolved Security ID", value=security_id, disabled=True)
+
       transaction_type = st.selectbox("Transaction Type", ["BUY", "SELL"])
       product_type = st.selectbox(
           "Product Type", ["INTRADAY", "CNC", "MARGIN", "MTF"]
@@ -620,10 +654,8 @@ if st.session_state.show_form:
       order_type = st.selectbox("Order Type", ["LIMIT", "MARKET"])
 
     with col2:
-      # Quantity and leg values configured as free text fields for numbers only (without +, -)
       quantity = st.text_input("Quantity", value="1")
       
-      # If order type is MARKET, entry price is disabled/forced to 0; otherwise free text input
       if order_type == "MARKET":
         price = st.text_input("Entry Price", value="0.00", disabled=True)
       else:
@@ -633,11 +665,9 @@ if st.session_state.show_form:
       stop_loss_price = st.text_input("Stop Loss Price", value="0.00")
       trailing_jump = st.text_input("Trailing Jump (Optional)", value="0.00")
 
-    # Changed submit button label to "Confirm Order" as requested
     submit_button = st.form_submit_button(label="Confirm Order")
 
     if submit_button:
-      # Helper validation to ensure inputs contain only digits/decimals and no '+' or '-' symbols
       def is_valid_number(val):
         cleaned = val.strip()
         if not cleaned or "+" in cleaned or "-" in cleaned:
@@ -649,7 +679,7 @@ if st.session_state.show_form:
           return False
 
       if not security_id:
-        st.error("Please enter a valid Security ID.")
+        st.error("Please select a valid Security ID / Contract.")
       elif not all([is_valid_number(quantity), is_valid_number(target_price), is_valid_number(stop_loss_price), is_valid_number(trailing_jump)]):
         st.error("Quantity and leg values must be numbers only without '+' or '-' symbols.")
       elif float(target_price) <= 0 or float(stop_loss_price) <= 0:
@@ -657,7 +687,6 @@ if st.session_state.show_form:
       elif order_type == "LIMIT" and (not is_valid_number(price) or float(price) <= 0):
         st.error("Entry Price must be greater than 0 for LIMIT orders.")
       else:
-        # Format values appropriately for DhanHQ specifications
         final_quantity = int(float(quantity.strip()))
         final_price = 0.0 if order_type == "MARKET" else float(price.strip())
         final_target = float(target_price.strip())
@@ -690,7 +719,6 @@ if st.session_state.show_form:
                   f"Super Order Placed Successfully! Order ID:"
                   f" {res_data.get('orderId')}"
               )
-              # Reset state after successful order placement if desired
               st.session_state.show_form = False
             else:
               st.error(f"Failed to place order: {res_data}")
@@ -698,6 +726,7 @@ if st.session_state.show_form:
               st.error(
                   f"An error occurred: {e} | Raw Response: {response.text}"
               )
+
 
 if not super_df.empty:
     for index, row in super_df.iterrows():
