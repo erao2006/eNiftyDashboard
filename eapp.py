@@ -4,7 +4,7 @@ import requests
 import io
 import yfinance as yf
 import yfinance.shared as shared
-from dhanhq import dhanhq, DhanContext
+from dhanhq import dhanhq, DhanContext, security
 from zoneinfo import ZoneInfo
 import logging
 from streamlit_autorefresh import st_autorefresh
