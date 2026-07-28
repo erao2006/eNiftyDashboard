@@ -589,78 +589,115 @@ super_df = fetch_super_orders() # Your existing fetch function
 # ==========================================
 st.title("Dhan Super Order Management")
 
+import streamlit as st
+
 st.subheader("Place New Super Order")
 
-with st.form("super_order_form"):
-  col1, col2 = st.columns(2)
+# Session state to manage whether the form is displayed
+if "show_form" not in st.session_state:
+  st.session_state.show_form = False
 
-  with col1:
-    security_id = st.text_input("Security ID", placeholder="e.g., 11536")
-    exchange_segment = st.selectbox(
-        "Exchange Segment", ["NSE_EQ", "NSE_FNO", "BSE_EQ", "MCX_COMM"]
-    )
-    transaction_type = st.selectbox("Transaction Type", ["BUY", "SELL"])
-    product_type = st.selectbox(
-        "Product Type", ["INTRADAY", "CNC", "MARGIN", "MTF"]
-    )
-    order_type = st.selectbox("Order Type", ["LIMIT", "MARKET"])
+# Initial button to reveal the form
+if not st.session_state.show_form:
+  if st.button("Place Order"):
+    st.session_state.show_form = True
+    st.rerun()
 
-  with col2:
-    quantity = st.number_input("Quantity", min_value=1, value=1)
-    price = st.number_input(
-        "Entry Price (0 for Market)", min_value=0.0, value=0.0, step=0.05
-    )
-    target_price = st.number_input(
-        "Target Price", min_value=0.0, value=0.0, step=0.05
-    )
-    stop_loss_price = st.number_input(
-        "Stop Loss Price", min_value=0.0, value=0.0, step=0.05
-    )
-    trailing_jump = st.number_input(
-        "Trailing Jump (Optional)", min_value=0.0, value=0.0, step=0.05
-    )
+# Display form only after the initial button is clicked
+if st.session_state.show_form:
+  with st.form("super_order_form"):
+    col1, col2 = st.columns(2)
 
-  submit_button = st.form_submit_button(label="Place Super Order")
+    with col1:
+      security_id = st.text_input("Security ID", placeholder="e.g., 11536")
+      exchange_segment = st.selectbox(
+          "Exchange Segment", ["NSE_EQ", "NSE_FNO", "BSE_EQ", "BSE_FNO", "MCX_COMM"]
+      )
+      transaction_type = st.selectbox("Transaction Type", ["BUY", "SELL"])
+      product_type = st.selectbox(
+          "Product Type", ["INTRADAY", "CNC", "MARGIN", "MTF"]
+      )
+      order_type = st.selectbox("Order Type", ["LIMIT", "MARKET"])
 
-  if submit_button:
-    if not security_id:
-      st.error("Please enter a valid Security ID.")
-    elif target_price <= 0 or stop_loss_price <= 0:
-      st.error("Target Price and Stop Loss Price must be greater than 0.")
-    else:
-      with st.spinner("Placing Super Order..."):
-        response = place_super_order(
-            security_id=security_id,
-            exchange_segment=exchange_segment,
-            transaction_type=transaction_type,
-            product_type=product_type,
-            order_type=order_type,
-            quantity=quantity,
-            price=price,
-            target_price=target_price,
-            stop_loss_price=stop_loss_price,
-            trailing_jump=trailing_jump,
-        )
+    with col2:
+      # Quantity and leg values configured as free text fields for numbers only (without +, -)
+      quantity = st.text_input("Quantity", value="1")
+      
+      # If order type is MARKET, entry price is disabled/forced to 0; otherwise free text input
+      if order_type == "MARKET":
+        price = st.text_input("Entry Price", value="0.00", disabled=True)
+      else:
+        price = st.text_input("Entry Price", value="0.00")
 
+      target_price = st.text_input("Target Price", value="0.00")
+      stop_loss_price = st.text_input("Stop Loss Price", value="0.00")
+      trailing_jump = st.text_input("Trailing Jump (Optional)", value="0.00")
+
+    # Changed submit button label to "Confirm Order" as requested
+    submit_button = st.form_submit_button(label="Confirm Order")
+
+    if submit_button:
+      # Helper validation to ensure inputs contain only digits/decimals and no '+' or '-' symbols
+      def is_valid_number(val):
+        cleaned = val.strip()
+        if not cleaned or "+" in cleaned or "-" in cleaned:
+          return False
         try:
-          res_data = response.json()
-          if response.status_code == 200 and res_data.get("orderStatus") in [
-              "PENDING",
-              "TRANSIT",
-              "TRADED",
-              "PART_TRADED",
-          ]:
-            st.success(
-                f"Super Order Placed Successfully! Order ID:"
-                f" {res_data.get('orderId')}"
-            )
-          else:
-            st.error(f"Failed to place order: {res_data}")
-        except Exception as e:
-            st.error(
-                f"An error occurred: {e} | Raw Response: {response.text}"
-            )
+          float(cleaned)
+          return True
+        except ValueError:
+          return False
 
+      if not security_id:
+        st.error("Please enter a valid Security ID.")
+      elif not all([is_valid_number(quantity), is_valid_number(target_price), is_valid_number(stop_loss_price), is_valid_number(trailing_jump)]):
+        st.error("Quantity and leg values must be numbers only without '+' or '-' symbols.")
+      elif float(target_price) <= 0 or float(stop_loss_price) <= 0:
+        st.error("Target Price and Stop Loss Price must be greater than 0.")
+      elif order_type == "LIMIT" and (not is_valid_number(price) or float(price) <= 0):
+        st.error("Entry Price must be greater than 0 for LIMIT orders.")
+      else:
+        # Format values appropriately for DhanHQ specifications
+        final_quantity = int(float(quantity.strip()))
+        final_price = 0.0 if order_type == "MARKET" else float(price.strip())
+        final_target = float(target_price.strip())
+        final_sl = float(stop_loss_price.strip())
+        final_jump = float(trailing_jump.strip()) if trailing_jump.strip() else 0.0
+
+        with st.spinner("Placing Super Order..."):
+          response = place_super_order(
+              security_id=security_id,
+              exchange_segment=exchange_segment,
+              transaction_type=transaction_type,
+              product_type=product_type,
+              order_type=order_type,
+              quantity=final_quantity,
+              price=final_price,
+              target_price=final_target,
+              stop_loss_price=final_sl,
+              trailing_jump=final_jump,
+          )
+
+          try:
+            res_data = response.json()
+            if response.status_code == 200 and res_data.get("orderStatus") in [
+                "PENDING",
+                "TRANSIT",
+                "TRADED",
+                "PART_TRADED",
+            ]:
+              st.success(
+                  f"Super Order Placed Successfully! Order ID:"
+                  f" {res_data.get('orderId')}"
+              )
+              # Reset state after successful order placement if desired
+              st.session_state.show_form = False
+            else:
+              st.error(f"Failed to place order: {res_data}")
+          except Exception as e:
+              st.error(
+                  f"An error occurred: {e} | Raw Response: {response.text}"
+              )
 
 if not super_df.empty:
     for index, row in super_df.iterrows():
